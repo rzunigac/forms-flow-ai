@@ -362,7 +362,7 @@ useImperativeHandle(ref, () => {
             data-testid="form-edit-wizard-display"
             name="display"
             />
-          <span>Allow adding multiple pages in this form</span>
+          <span>{t("Allow adding multiple pages in this form")}</span>
           {formDetails.display === "wizard" ? <CheckboxCheckedIcon /> : <CheckboxUncheckedIcon /> }
         </label>
 
