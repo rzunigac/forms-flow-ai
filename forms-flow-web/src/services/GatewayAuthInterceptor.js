@@ -17,6 +17,45 @@ export function _matchesGateway(requestUrl, baseUrl, locationHref) {
   return absolute === normalized || absolute.startsWith(normalized + "/") || absolute.startsWith(normalized + "?") || absolute.startsWith(normalized + "#");
 }
 
-export function installGatewayAuthInterceptor(_config) {
-  // Full implementation follows in later tasks.
+export function installGatewayAuthInterceptor({ gatewayBaseUrl, getToken, target }) {
+  const t = target || (typeof window !== "undefined" ? window : undefined);
+  if (!t) return;
+  const base = normalizeBaseUrl(gatewayBaseUrl);
+  if (!base) return;
+
+  wrapFetch(t, base, getToken);
+}
+
+function wrapFetch(target, base, getToken) {
+  const originalFetch = target.fetch;
+  if (!originalFetch) return;
+  if (originalFetch.__gatewayAuthInstalled) return;
+
+  const wrapped = new Proxy(originalFetch, {
+    apply(fn, _thisArg, [input, init]) {
+      const url =
+        typeof input === "string" ? input : (input && input.url) || "";
+      const locationHref = target.location && target.location.href;
+
+      if (!_matchesGateway(url, base, locationHref)) {
+        return fn.call(target, input, init);
+      }
+
+      const token = getToken && getToken();
+      if (!token) {
+        return fn.call(target, input, init);
+      }
+
+      const mergedInit = init ? { ...init } : {};
+      const headers = new Headers(mergedInit.headers || {});
+      if (!headers.has("Authorization")) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      mergedInit.headers = headers;
+      return fn.call(target, input, mergedInit);
+    },
+  });
+
+  wrapped.__gatewayAuthInstalled = true;
+  target.fetch = wrapped;
 }
