@@ -113,3 +113,39 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
     expect(headers.get("Authorization")).toBe("Bearer preset");
   });
 });
+
+describe("GatewayAuthInterceptor — fetch with Request argument", () => {
+  const BASE = "https://gw.example.com";
+
+  test("adds Authorization when called with a Request to the gateway", async () => {
+    const target = makeFakeTarget();
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-abc",
+      target,
+    });
+
+    const req = new Request(`${BASE}/files/123`, { method: "DELETE" });
+    await target.fetch(req);
+
+    expect(target.fetch).toHaveBeenCalledTimes(1);
+    const [arg] = target.fetch.mock.calls[0];
+    expect(arg).toBeInstanceOf(Request);
+    expect(arg.headers.get("Authorization")).toBe("Bearer tkn-abc");
+  });
+
+  test("original Request object is not mutated", async () => {
+    const target = makeFakeTarget();
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-abc",
+      target,
+    });
+
+    const req = new Request(`${BASE}/files/123`);
+    const originalAuth = req.headers.get("Authorization");
+    await target.fetch(req);
+
+    expect(req.headers.get("Authorization")).toBe(originalAuth);
+  });
+});

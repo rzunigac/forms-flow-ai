@@ -33,6 +33,7 @@ function wrapFetch(target, base, getToken) {
 
   const wrapped = new Proxy(originalFetch, {
     apply(fn, _thisArg, [input, init]) {
+      const isRequest = typeof Request !== "undefined" && input instanceof Request;
       const url =
         typeof input === "string" ? input : (input && input.url) || "";
       const locationHref = target.location && target.location.href;
@@ -44,6 +45,16 @@ function wrapFetch(target, base, getToken) {
       const token = getToken && getToken();
       if (!token) {
         return fn.call(target, input, init);
+      }
+
+      if (isRequest) {
+        if (input.headers.has("Authorization")) {
+          return fn.call(target, input, init);
+        }
+        const newHeaders = new Headers(input.headers);
+        newHeaders.set("Authorization", `Bearer ${token}`);
+        const newReq = new Request(input, { headers: newHeaders });
+        return fn.call(target, newReq, init);
       }
 
       const mergedInit = init ? { ...init } : {};
