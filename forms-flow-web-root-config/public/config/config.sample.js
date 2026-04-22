@@ -49,6 +49,10 @@ window["_env_"] = {
   // Document Service api hosted from forms-flow-documents, default: http://{your-ip-address}:5006
   REACT_APP_DOCUMENT_SERVICE_URL: "<Custom Document URL>",
 
+  // Storage gateway base URL (used by the form.io File component via URL storage).
+  // Example: "http://localhost:5100"
+  REACT_APP_STORAGE_GATEWAY_URL: "<Storage Gateway URL>",
+
   // Enable Multitenancy
   REACT_APP_MULTI_TENANCY_ENABLED: false,
   // Enable creating workflow for all tenants
