@@ -24,6 +24,7 @@ export function installGatewayAuthInterceptor({ gatewayBaseUrl, getToken, target
   if (!base) return;
 
   wrapFetch(t, base, getToken);
+  wrapXhr(t, base, getToken);
 }
 
 function wrapFetch(target, base, getToken) {
@@ -69,4 +70,42 @@ function wrapFetch(target, base, getToken) {
 
   wrapped.__gatewayAuthInstalled = true;
   target.fetch = wrapped;
+}
+
+function wrapXhr(target, base, getToken) {
+  const XHR = target.XMLHttpRequest;
+  if (!XHR || !XHR.prototype) return;
+  const proto = XHR.prototype;
+  if (proto.send && proto.send.__gatewayAuthInstalled) return;
+
+  const originalOpen = proto.open;
+  const originalSetRequestHeader = proto.setRequestHeader;
+  const originalSend = proto.send;
+
+  proto.open = function (method, url, ...rest) {
+    this.__gatewayAuthUrl = url;
+    this.__gatewayAuthHasAuthHeader = false;
+    return originalOpen.call(this, method, url, ...rest);
+  };
+
+  proto.setRequestHeader = function (name, value) {
+    if (typeof name === "string" && name.toLowerCase() === "authorization") {
+      this.__gatewayAuthHasAuthHeader = true;
+    }
+    return originalSetRequestHeader.call(this, name, value);
+  };
+
+  proto.send = function (body) {
+    const url = this.__gatewayAuthUrl || "";
+    const locationHref = target.location && target.location.href;
+    if (_matchesGateway(url, base, locationHref) && !this.__gatewayAuthHasAuthHeader) {
+      const token = getToken && getToken();
+      if (token) {
+        originalSetRequestHeader.call(this, "Authorization", `Bearer ${token}`);
+      }
+    }
+    return originalSend.call(this, body);
+  };
+
+  proto.send.__gatewayAuthInstalled = true;
 }

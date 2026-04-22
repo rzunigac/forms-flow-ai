@@ -149,3 +149,106 @@ describe("GatewayAuthInterceptor — fetch with Request argument", () => {
     expect(req.headers.get("Authorization")).toBe(originalAuth);
   });
 });
+
+describe("GatewayAuthInterceptor — XHR wrapping", () => {
+  const BASE = "https://gw.example.com";
+
+  function makeXhrTarget() {
+    const sends = [];
+    const headerCalls = [];
+    class FakeXHR {
+      constructor() {
+        this._url = null;
+        this._headers = {};
+      }
+      open(method, url) {
+        this._method = method;
+        this._url = url;
+      }
+      setRequestHeader(name, value) {
+        this._headers[name] = value;
+        headerCalls.push({ name, value, instance: this });
+      }
+      send(body) {
+        sends.push({ instance: this, body });
+      }
+    }
+    return {
+      target: {
+        fetch: jest.fn(() => Promise.resolve({})),
+        location: { href: "https://app.example.com/" },
+        XMLHttpRequest: FakeXHR,
+      },
+      FakeXHR,
+      sends,
+      headerCalls,
+    };
+  }
+
+  test("adds Authorization header on XHR.send for gateway URL", () => {
+    const ctx = makeXhrTarget();
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-xyz",
+      target: ctx.target,
+    });
+
+    const xhr = new ctx.target.XMLHttpRequest();
+    xhr.open("POST", `${BASE}/files`);
+    xhr.send("body");
+
+    const authCall = ctx.headerCalls.find((c) => c.name === "Authorization");
+    expect(authCall).toBeDefined();
+    expect(authCall.value).toBe("Bearer tkn-xyz");
+    expect(ctx.sends).toHaveLength(1);
+  });
+
+  test("does not add Authorization header when URL is not a gateway URL", () => {
+    const ctx = makeXhrTarget();
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-xyz",
+      target: ctx.target,
+    });
+
+    const xhr = new ctx.target.XMLHttpRequest();
+    xhr.open("GET", "https://other.example.com/x");
+    xhr.send();
+
+    const authCall = ctx.headerCalls.find((c) => c.name === "Authorization");
+    expect(authCall).toBeUndefined();
+  });
+
+  test("does not add Authorization header when token is empty", () => {
+    const ctx = makeXhrTarget();
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "",
+      target: ctx.target,
+    });
+
+    const xhr = new ctx.target.XMLHttpRequest();
+    xhr.open("POST", `${BASE}/files`);
+    xhr.send();
+
+    expect(ctx.headerCalls.find((c) => c.name === "Authorization")).toBeUndefined();
+  });
+
+  test("does not overwrite pre-set Authorization on XHR", () => {
+    const ctx = makeXhrTarget();
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-xyz",
+      target: ctx.target,
+    });
+
+    const xhr = new ctx.target.XMLHttpRequest();
+    xhr.open("POST", `${BASE}/files`);
+    xhr.setRequestHeader("Authorization", "Bearer preset");
+    xhr.send();
+
+    const authCalls = ctx.headerCalls.filter((c) => c.name === "Authorization");
+    expect(authCalls).toHaveLength(1);
+    expect(authCalls[0].value).toBe("Bearer preset");
+  });
+});
