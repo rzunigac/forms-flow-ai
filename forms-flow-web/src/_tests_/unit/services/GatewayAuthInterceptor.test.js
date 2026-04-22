@@ -252,3 +252,64 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
     expect(authCalls[0].value).toBe("Bearer preset");
   });
 });
+
+describe("GatewayAuthInterceptor — idempotency", () => {
+  const BASE = "https://gw.example.com";
+
+  test("calling install twice leaves fetch wrapped only once", async () => {
+    const target = makeFakeTarget();
+    const originalFetch = target.fetch;
+
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-abc",
+      target,
+    });
+    const afterFirst = target.fetch;
+
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-abc",
+      target,
+    });
+    const afterSecond = target.fetch;
+
+    expect(afterSecond).toBe(afterFirst);
+    expect(afterSecond).not.toBe(originalFetch);
+
+    await target.fetch(`${BASE}/files/1`);
+    expect(originalFetch).toHaveBeenCalledTimes(1);
+    const [, init] = originalFetch.mock.calls[0];
+    const headers = new Headers(init.headers);
+    expect(headers.get("Authorization")).toBe("Bearer tkn-abc");
+  });
+
+  test("calling install twice leaves XHR.send wrapped only once", () => {
+    const target = {
+      fetch: jest.fn(() => Promise.resolve({})),
+      location: { href: "https://app.example.com/" },
+      XMLHttpRequest: class FakeXHR {
+        constructor() { this._headers = {}; }
+        open(m, u) { this._url = u; }
+        setRequestHeader(n, v) { this._headers[n] = v; }
+        send() { this._sent = true; }
+      },
+    };
+
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-abc",
+      target,
+    });
+    const sendAfterFirst = target.XMLHttpRequest.prototype.send;
+
+    installGatewayAuthInterceptor({
+      gatewayBaseUrl: BASE,
+      getToken: () => "tkn-abc",
+      target,
+    });
+    const sendAfterSecond = target.XMLHttpRequest.prototype.send;
+
+    expect(sendAfterSecond).toBe(sendAfterFirst);
+  });
+});
