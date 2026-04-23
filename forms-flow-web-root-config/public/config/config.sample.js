@@ -49,9 +49,16 @@ window["_env_"] = {
   // Document Service api hosted from forms-flow-documents, default: http://{your-ip-address}:5006
   REACT_APP_DOCUMENT_SERVICE_URL: "<Custom Document URL>",
 
-  // Storage gateway base URL (used by the form.io File component via URL storage).
-  // Example: "http://localhost:5100"
-  REACT_APP_STORAGE_GATEWAY_URL: "<Storage Gateway URL>",
+  // Bearer token injection for JS-initiated HTTP requests (fetch / XHR / axios).
+  // When enabled, the Keycloak access token is added as Authorization: Bearer <token>
+  // on requests whose origin (scheme + host + port) matches one of the configured
+  // URL patterns. Disabled by default; both keys must be set.
+  //
+  // Pattern syntax: "http(s)://host[:port]". Leftmost-label wildcards allowed,
+  // e.g. "https://*.example.com". Unsafe patterns (*.com, bare *, non-http scheme,
+  // mid-label wildcards) are ignored at install with a console warning.
+  REACT_APP_BEARER_TOKEN_INJECTION_ENABLED: "false",
+  REACT_APP_BEARER_TOKEN_URLS: "<Comma-separated URL patterns, e.g. http://localhost:9999,https://*.example.com>",
 
   // Enable Multitenancy
   REACT_APP_MULTI_TENANCY_ENABLED: false,
