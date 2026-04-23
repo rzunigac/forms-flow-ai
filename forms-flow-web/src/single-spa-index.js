@@ -7,8 +7,8 @@ import { featureFlags } from "./featureToogle";
 import { FlagsProvider } from "flagged";
 import { Formio, Components } from "@aot-technologies/formio-react";
 import { AppConfig } from "./config";
-import UserService from "./services/UserService";
 import { installGatewayAuthInterceptor } from "./services/GatewayAuthInterceptor";
+import { kcServiceInstance } from "./components/PrivateRoute";
 import "./resourceBundles/i18n.js";
 
 if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === "object") {
@@ -25,7 +25,13 @@ Formio.setBaseUrl(AppConfig.apiUrl);
 if (AppConfig.storageGatewayUrl) {
   installGatewayAuthInterceptor({
     gatewayBaseUrl: AppConfig.storageGatewayUrl,
-    getToken: UserService.getToken,
+    getToken: () => {
+      try {
+        return kcServiceInstance()?.getToken?.() || "";
+      } catch (_e) {
+        return "";
+      }
+    },
   });
 }
 

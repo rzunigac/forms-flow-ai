@@ -25,6 +25,7 @@ export function installGatewayAuthInterceptor({ gatewayBaseUrl, getToken, target
 
   wrapFetch(t, base, getToken);
   wrapXhr(t, base, getToken);
+  console.log("[GatewayAuthInterceptor] installed for base:", base);
 }
 
 function wrapFetch(target, base, getToken) {
