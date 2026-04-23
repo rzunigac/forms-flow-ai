@@ -7,7 +7,7 @@ import { featureFlags } from "./featureToogle";
 import { FlagsProvider } from "flagged";
 import { Formio, Components } from "@aot-technologies/formio-react";
 import { AppConfig } from "./config";
-import { installGatewayAuthInterceptor } from "./services/GatewayAuthInterceptor";
+import { installBearerTokenInterceptor } from "./services/BearerTokenInterceptor";
 import { kcServiceInstance } from "./components/PrivateRoute";
 import "./resourceBundles/i18n.js";
 
@@ -23,7 +23,7 @@ Formio.setProjectUrl(AppConfig.projectUrl);
 Formio.setBaseUrl(AppConfig.apiUrl);
 
 if (AppConfig.storageGatewayUrl) {
-  installGatewayAuthInterceptor({
+  installBearerTokenInterceptor({
     gatewayBaseUrl: AppConfig.storageGatewayUrl,
     getToken: () => {
       try {

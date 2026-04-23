@@ -5,7 +5,7 @@ function normalizeBaseUrl(baseUrl) {
   return baseUrl.replace(/\/+$/, "");
 }
 
-export function _matchesGateway(requestUrl, baseUrl, locationHref) {
+export function _matchesAny(requestUrl, baseUrl, locationHref) {
   const normalized = normalizeBaseUrl(baseUrl);
   if (!normalized) return false;
   let absolute;
@@ -17,7 +17,7 @@ export function _matchesGateway(requestUrl, baseUrl, locationHref) {
   return absolute === normalized || absolute.startsWith(normalized + "/") || absolute.startsWith(normalized + "?") || absolute.startsWith(normalized + "#");
 }
 
-export function installGatewayAuthInterceptor({ gatewayBaseUrl, getToken, target }) {
+export function installBearerTokenInterceptor({ gatewayBaseUrl, getToken, target }) {
   const t = target || (typeof window !== "undefined" ? window : undefined);
   if (!t) return;
   const base = normalizeBaseUrl(gatewayBaseUrl);
@@ -25,13 +25,13 @@ export function installGatewayAuthInterceptor({ gatewayBaseUrl, getToken, target
 
   wrapFetch(t, base, getToken);
   wrapXhr(t, base, getToken);
-  console.log("[GatewayAuthInterceptor] installed for base:", base);
+  console.log("[BearerTokenInterceptor] installed for base:", base);
 }
 
 function wrapFetch(target, base, getToken) {
   const originalFetch = target.fetch;
   if (!originalFetch) return;
-  if (originalFetch.__gatewayAuthInstalled) return;
+  if (originalFetch.__bearerTokenAuthInstalled) return;
 
   const wrapped = new Proxy(originalFetch, {
     apply(fn, _thisArg, [input, init]) {
@@ -40,7 +40,7 @@ function wrapFetch(target, base, getToken) {
         typeof input === "string" ? input : (input && input.url) || "";
       const locationHref = target.location && target.location.href;
 
-      if (!_matchesGateway(url, base, locationHref)) {
+      if (!_matchesAny(url, base, locationHref)) {
         return fn.call(target, input, init);
       }
 
@@ -69,7 +69,7 @@ function wrapFetch(target, base, getToken) {
     },
   });
 
-  wrapped.__gatewayAuthInstalled = true;
+  wrapped.__bearerTokenAuthInstalled = true;
   target.fetch = wrapped;
 }
 
@@ -77,29 +77,29 @@ function wrapXhr(target, base, getToken) {
   const XHR = target.XMLHttpRequest;
   if (!XHR || !XHR.prototype) return;
   const proto = XHR.prototype;
-  if (proto.send && proto.send.__gatewayAuthInstalled) return;
+  if (proto.send && proto.send.__bearerTokenAuthInstalled) return;
 
   const originalOpen = proto.open;
   const originalSetRequestHeader = proto.setRequestHeader;
   const originalSend = proto.send;
 
   proto.open = function (method, url, ...rest) {
-    this.__gatewayAuthUrl = url;
-    this.__gatewayAuthHasAuthHeader = false;
+    this.__bearerTokenAuthUrl = url;
+    this.__bearerTokenAuthHasAuthHeader = false;
     return originalOpen.call(this, method, url, ...rest);
   };
 
   proto.setRequestHeader = function (name, value) {
     if (typeof name === "string" && name.toLowerCase() === "authorization") {
-      this.__gatewayAuthHasAuthHeader = true;
+      this.__bearerTokenAuthHasAuthHeader = true;
     }
     return originalSetRequestHeader.call(this, name, value);
   };
 
   proto.send = function (body) {
-    const url = this.__gatewayAuthUrl || "";
+    const url = this.__bearerTokenAuthUrl || "";
     const locationHref = target.location && target.location.href;
-    if (_matchesGateway(url, base, locationHref) && !this.__gatewayAuthHasAuthHeader) {
+    if (_matchesAny(url, base, locationHref) && !this.__bearerTokenAuthHasAuthHeader) {
       const token = getToken && getToken();
       if (token) {
         originalSetRequestHeader.call(this, "Authorization", `Bearer ${token}`);
@@ -108,5 +108,5 @@ function wrapXhr(target, base, getToken) {
     return originalSend.call(this, body);
   };
 
-  proto.send.__gatewayAuthInstalled = true;
+  proto.send.__bearerTokenAuthInstalled = true;
 }

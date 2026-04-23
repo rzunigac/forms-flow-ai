@@ -1,25 +1,25 @@
-import { _matchesGateway, installGatewayAuthInterceptor } from "../../../services/GatewayAuthInterceptor";
+import { _matchesAny, installBearerTokenInterceptor } from "../../../services/BearerTokenInterceptor";
 
 describe("GatewayAuthInterceptor — URL matching", () => {
   test("URL starting with the gateway base matches", () => {
-    expect(_matchesGateway("https://gw.example.com/files/abc", "https://gw.example.com")).toBe(true);
+    expect(_matchesAny("https://gw.example.com/files/abc", "https://gw.example.com")).toBe(true);
   });
 
   test("URL on a different host does not match", () => {
-    expect(_matchesGateway("https://other.example.com/files/abc", "https://gw.example.com")).toBe(false);
+    expect(_matchesAny("https://other.example.com/files/abc", "https://gw.example.com")).toBe(false);
   });
 
   test("trailing slash on baseUrl is normalized", () => {
-    expect(_matchesGateway("https://gw.example.com/files/abc", "https://gw.example.com/")).toBe(true);
+    expect(_matchesAny("https://gw.example.com/files/abc", "https://gw.example.com/")).toBe(true);
   });
 
   test("relative URL resolves against window.location and matches", () => {
     const loc = "https://gw.example.com/app/";
-    expect(_matchesGateway("files/abc", "https://gw.example.com", loc)).toBe(true);
+    expect(_matchesAny("files/abc", "https://gw.example.com", loc)).toBe(true);
   });
 
   test("empty baseUrl never matches", () => {
-    expect(_matchesGateway("https://gw.example.com/x", "")).toBe(false);
+    expect(_matchesAny("https://gw.example.com/x", "")).toBe(false);
   });
 });
 
@@ -36,7 +36,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
 
   test("adds Authorization header on gateway URL with token present", async () => {
     const target = makeFakeTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
@@ -53,7 +53,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
   test("passes through without header when URL is not a gateway URL", async () => {
     const target = makeFakeTarget();
     const originalFetch = target.fetch;
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
@@ -68,7 +68,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
 
   test("omits Authorization header when getToken returns undefined", async () => {
     const target = makeFakeTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => undefined,
       target,
@@ -83,7 +83,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
 
   test("omits Authorization header when getToken returns empty string", async () => {
     const target = makeFakeTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "",
       target,
@@ -98,7 +98,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
 
   test("does not overwrite a pre-existing Authorization header", async () => {
     const target = makeFakeTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
@@ -119,7 +119,7 @@ describe("GatewayAuthInterceptor — fetch with Request argument", () => {
 
   test("adds Authorization when called with a Request to the gateway", async () => {
     const target = makeFakeTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
@@ -136,7 +136,7 @@ describe("GatewayAuthInterceptor — fetch with Request argument", () => {
 
   test("original Request object is not mutated", async () => {
     const target = makeFakeTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
@@ -187,7 +187,7 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
 
   test("adds Authorization header on XHR.send for gateway URL", () => {
     const ctx = makeXhrTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-xyz",
       target: ctx.target,
@@ -205,7 +205,7 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
 
   test("does not add Authorization header when URL is not a gateway URL", () => {
     const ctx = makeXhrTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-xyz",
       target: ctx.target,
@@ -221,7 +221,7 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
 
   test("does not add Authorization header when token is empty", () => {
     const ctx = makeXhrTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "",
       target: ctx.target,
@@ -236,7 +236,7 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
 
   test("does not overwrite pre-set Authorization on XHR", () => {
     const ctx = makeXhrTarget();
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-xyz",
       target: ctx.target,
@@ -260,14 +260,14 @@ describe("GatewayAuthInterceptor — idempotency", () => {
     const target = makeFakeTarget();
     const originalFetch = target.fetch;
 
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
     });
     const afterFirst = target.fetch;
 
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
@@ -296,14 +296,14 @@ describe("GatewayAuthInterceptor — idempotency", () => {
       },
     };
 
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
     });
     const sendAfterFirst = target.XMLHttpRequest.prototype.send;
 
-    installGatewayAuthInterceptor({
+    installBearerTokenInterceptor({
       gatewayBaseUrl: BASE,
       getToken: () => "tkn-abc",
       target,
