@@ -52,10 +52,9 @@ export function _parsePattern(raw) {
   host = normalizeHost(host);
   if (!host) return { valid: false, reason: "empty host" };
 
-  // Wildcard handling — leftmost-label only
+  // Wildcard handling — leftmost-label only. normalizeHost has already stripped any trailing dot.
   if (host.startsWith("*.")) {
     const suffix = host.slice(2);
-    if (!suffix) return { valid: false, reason: "empty wildcard suffix" };
     if (suffix.indexOf("*") !== -1) return { valid: false, reason: "only one leftmost-label wildcard allowed" };
     const labels = suffix.split(".");
     if (labels.length < 2) return { valid: false, reason: "wildcard suffix must have at least 2 labels" };
@@ -77,6 +76,7 @@ function _parsedOriginOf(requestUrl, locationHref) {
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") return null;
   const host = normalizeHost(url.hostname);
+  if (!host || host.startsWith(".")) return null;
   const port = url.port || defaultPortFor(url.protocol);
   return { scheme: url.protocol, host, port };
 }

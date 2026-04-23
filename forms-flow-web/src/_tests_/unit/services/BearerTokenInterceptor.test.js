@@ -1,4 +1,4 @@
-import { _matchesAny, installBearerTokenInterceptor } from "../../../services/BearerTokenInterceptor";
+import { _matchesAny, _parsePattern, installBearerTokenInterceptor } from "../../../services/BearerTokenInterceptor";
 
 describe("GatewayAuthInterceptor — URL matching", () => {
   test("URL starting with the gateway base matches", () => {
@@ -468,5 +468,73 @@ describe("BearerTokenInterceptor — wildcard subdomain matching", () => {
     const patterns = ["https://example.com", "https://*.example.com"];
     expect(_matchesAny("https://example.com/x", patterns)).toBe(true);
     expect(_matchesAny("https://foo.example.com/x", patterns)).toBe(true);
+  });
+
+  test("host with leading dot does NOT match wildcard (C1 regression)", () => {
+    expect(_matchesAny("https://.example.com/x", [P])).toBe(false);
+  });
+
+  test("host with double leading dot does NOT match wildcard", () => {
+    expect(_matchesAny("https://..example.com/x", [P])).toBe(false);
+  });
+});
+
+describe("BearerTokenInterceptor — _parsePattern direct tests", () => {
+  test("accepts a valid exact pattern", () => {
+    expect(_parsePattern("https://api.example.com")).toMatchObject({
+      valid: true,
+      scheme: "https:",
+      port: "443",
+      host: "api.example.com",
+      wildcard: false,
+    });
+  });
+
+  test("accepts a valid wildcard pattern", () => {
+    expect(_parsePattern("https://*.example.com")).toMatchObject({
+      valid: true,
+      scheme: "https:",
+      port: "443",
+      suffix: "example.com",
+      wildcard: true,
+    });
+  });
+
+  test("rejects non-http scheme", () => {
+    expect(_parsePattern("ftp://api.example.com")).toMatchObject({
+      valid: false,
+      reason: expect.stringContaining("scheme"),
+    });
+  });
+
+  test("rejects *.com (single-label suffix)", () => {
+    expect(_parsePattern("https://*.com")).toMatchObject({
+      valid: false,
+      reason: expect.stringContaining("at least 2 labels"),
+    });
+  });
+
+  test("rejects non-leftmost wildcard foo.*.com", () => {
+    expect(_parsePattern("https://foo.*.com")).toMatchObject({
+      valid: false,
+      reason: expect.stringContaining("leftmost"),
+    });
+  });
+
+  test("rejects partial-label wildcard *foo.example.com", () => {
+    expect(_parsePattern("https://*foo.example.com")).toMatchObject({
+      valid: false,
+      reason: expect.stringContaining("leftmost"),
+    });
+  });
+
+  test("rejects empty string", () => {
+    expect(_parsePattern("")).toMatchObject({ valid: false });
+  });
+
+  test("rejects non-string input", () => {
+    expect(_parsePattern(null)).toMatchObject({ valid: false });
+    expect(_parsePattern(undefined)).toMatchObject({ valid: false });
+    expect(_parsePattern(42)).toMatchObject({ valid: false });
   });
 });
