@@ -52,6 +52,19 @@ export function _parsePattern(raw) {
   host = normalizeHost(host);
   if (!host) return { valid: false, reason: "empty host" };
 
+  // Wildcard handling — leftmost-label only
+  if (host.startsWith("*.")) {
+    const suffix = host.slice(2);
+    if (!suffix) return { valid: false, reason: "empty wildcard suffix" };
+    if (suffix.indexOf("*") !== -1) return { valid: false, reason: "only one leftmost-label wildcard allowed" };
+    const labels = suffix.split(".");
+    if (labels.length < 2) return { valid: false, reason: "wildcard suffix must have at least 2 labels" };
+    if (labels.some((l) => !l)) return { valid: false, reason: "empty label in wildcard suffix" };
+    return { valid: true, scheme, port, suffix, wildcard: true };
+  }
+
+  if (host.indexOf("*") !== -1) return { valid: false, reason: "wildcard only allowed as leftmost label (e.g. *.example.com)" };
+
   return { valid: true, scheme, port, host, wildcard: false };
 }
 
@@ -72,6 +85,9 @@ function _matchesPattern(origin, pattern) {
   if (!origin) return false;
   if (origin.scheme !== pattern.scheme) return false;
   if (origin.port !== pattern.port) return false;
+  if (pattern.wildcard) {
+    return origin.host.endsWith("." + pattern.suffix);
+  }
   return origin.host === pattern.host;
 }
 

@@ -423,3 +423,50 @@ describe("BearerTokenInterceptor — strict origin matching", () => {
     expect(_matchesAny("https://api.example.com/x", [])).toBe(false);
   });
 });
+
+describe("BearerTokenInterceptor — wildcard subdomain matching", () => {
+  const P = "https://*.example.com";
+
+  test("direct subdomain matches", () => {
+    expect(_matchesAny("https://foo.example.com/x", [P])).toBe(true);
+  });
+
+  test("multi-label subdomain matches", () => {
+    expect(_matchesAny("https://a.b.example.com/x", [P])).toBe(true);
+  });
+
+  test("apex host does NOT match a wildcard pattern", () => {
+    expect(_matchesAny("https://example.com/x", [P])).toBe(false);
+  });
+
+  test("host with collision suffix does not match", () => {
+    expect(_matchesAny("https://foo.example.com.evil.com/x", [P])).toBe(false);
+  });
+
+  test("host with prefix collision does not match", () => {
+    expect(_matchesAny("https://fooexample.com/x", [P])).toBe(false);
+  });
+
+  test("wildcard does not cross scheme", () => {
+    expect(_matchesAny("http://foo.example.com/x", [P])).toBe(false);
+  });
+
+  test("wildcard does not cross port", () => {
+    expect(_matchesAny("https://foo.example.com:8443/x", [P])).toBe(false);
+  });
+
+  test("wildcard with explicit port matches that port only", () => {
+    expect(_matchesAny("https://foo.example.com:8443/x", ["https://*.example.com:8443"])).toBe(true);
+    expect(_matchesAny("https://foo.example.com/x", ["https://*.example.com:8443"])).toBe(false);
+  });
+
+  test("wildcard host match is case-insensitive", () => {
+    expect(_matchesAny("https://FOO.Example.COM/x", [P])).toBe(true);
+  });
+
+  test("list can mix exact + wildcard; apex covered by a second exact entry", () => {
+    const patterns = ["https://example.com", "https://*.example.com"];
+    expect(_matchesAny("https://example.com/x", patterns)).toBe(true);
+    expect(_matchesAny("https://foo.example.com/x", patterns)).toBe(true);
+  });
+});
