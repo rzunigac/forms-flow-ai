@@ -107,12 +107,27 @@ export function installBearerTokenInterceptor({ urlPatterns, getToken, target })
   const t = target || (typeof window !== "undefined" ? window : undefined);
   if (!t) return;
 
-  const patterns = Array.isArray(urlPatterns) ? urlPatterns.filter(Boolean) : [];
-  if (patterns.length === 0) return;
+  const rawPatterns = Array.isArray(urlPatterns) ? urlPatterns.filter(Boolean) : [];
+  if (rawPatterns.length === 0) return;
 
-  wrapFetch(t, patterns, getToken);
-  wrapXhr(t, patterns, getToken);
-  console.log("[BearerTokenInterceptor] installed for patterns:", patterns);
+  const validPatterns = [];
+  for (const raw of rawPatterns) {
+    const parsed = _parsePattern(raw);
+    if (parsed.valid) {
+      validPatterns.push(raw);
+    } else {
+      console.warn(`[BearerTokenInterceptor] invalid pattern "${raw}" ignored: ${parsed.reason}`);
+    }
+  }
+
+  if (validPatterns.length === 0) {
+    console.warn("[BearerTokenInterceptor] no valid patterns — not installing");
+    return;
+  }
+
+  wrapFetch(t, validPatterns, getToken);
+  wrapXhr(t, validPatterns, getToken);
+  console.log("[BearerTokenInterceptor] installed for patterns:", validPatterns);
 }
 
 function wrapFetch(target, patterns, getToken) {

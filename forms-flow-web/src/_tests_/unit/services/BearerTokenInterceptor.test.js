@@ -479,6 +479,78 @@ describe("BearerTokenInterceptor — wildcard subdomain matching", () => {
   });
 });
 
+describe("BearerTokenInterceptor — install-time pattern validation", () => {
+  let warnSpy;
+  beforeEach(() => { warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {}); });
+  afterEach(() => { warnSpy.mockRestore(); });
+
+  function installWith(urlPatterns) {
+    const target = {
+      fetch: jest.fn(() => Promise.resolve({})),
+      location: { href: "https://app.example.com/" },
+      XMLHttpRequest: class FakeXHR {},
+    };
+    installBearerTokenInterceptor({
+      urlPatterns,
+      getToken: () => "tkn",
+      target,
+    });
+    return target;
+  }
+
+  test("logs warning for *.com and skips it", async () => {
+    const target = installWith(["https://*.com"]);
+    await target.fetch("https://foo.com/x");
+    const [, init] = target.fetch.mock.calls[0];
+    expect(new Headers((init && init.headers) || {}).get("Authorization")).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+  });
+
+  test("logs warning for bare https://*", () => {
+    installWith(["https://*"]);
+    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+  });
+
+  test("logs warning for non-http scheme", () => {
+    installWith(["ftp://api.example.com"]);
+    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+  });
+
+  test("logs warning for non-leftmost wildcard", () => {
+    installWith(["https://foo.*.com"]);
+    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+  });
+
+  test("logs warning for partial-label wildcard", () => {
+    installWith(["https://*foo.example.com"]);
+    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+  });
+
+  test("valid and invalid patterns coexist; valid ones still work", async () => {
+    const target = installWith(["https://*.com", "https://api.example.com"]);
+    await target.fetch("https://api.example.com/x");
+    const [, init] = target.fetch.mock.calls[0];
+    expect(new Headers(init.headers).get("Authorization")).toBe("Bearer tkn");
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  test("install is a no-op when EVERY pattern is invalid (no wrap)", () => {
+    const target = {
+      fetch: jest.fn(() => Promise.resolve({})),
+      location: { href: "https://app.example.com/" },
+      XMLHttpRequest: class FakeXHR {},
+    };
+    const originalFetch = target.fetch;
+    installBearerTokenInterceptor({
+      urlPatterns: ["ftp://x", "https://*"],
+      getToken: () => "tkn",
+      target,
+    });
+    expect(target.fetch).toBe(originalFetch);
+  });
+});
+
 describe("BearerTokenInterceptor — _parsePattern direct tests", () => {
   test("accepts a valid exact pattern", () => {
     expect(_parsePattern("https://api.example.com")).toMatchObject({
