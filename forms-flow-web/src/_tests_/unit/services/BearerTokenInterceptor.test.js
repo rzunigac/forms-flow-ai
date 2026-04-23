@@ -2,24 +2,24 @@ import { _matchesAny, installBearerTokenInterceptor } from "../../../services/Be
 
 describe("GatewayAuthInterceptor — URL matching", () => {
   test("URL starting with the gateway base matches", () => {
-    expect(_matchesAny("https://gw.example.com/files/abc", "https://gw.example.com")).toBe(true);
+    expect(_matchesAny("https://gw.example.com/files/abc", ["https://gw.example.com"])).toBe(true);
   });
 
   test("URL on a different host does not match", () => {
-    expect(_matchesAny("https://other.example.com/files/abc", "https://gw.example.com")).toBe(false);
+    expect(_matchesAny("https://other.example.com/files/abc", ["https://gw.example.com"])).toBe(false);
   });
 
   test("trailing slash on baseUrl is normalized", () => {
-    expect(_matchesAny("https://gw.example.com/files/abc", "https://gw.example.com/")).toBe(true);
+    expect(_matchesAny("https://gw.example.com/files/abc", ["https://gw.example.com/"])).toBe(true);
   });
 
   test("relative URL resolves against window.location and matches", () => {
     const loc = "https://gw.example.com/app/";
-    expect(_matchesAny("files/abc", "https://gw.example.com", loc)).toBe(true);
+    expect(_matchesAny("files/abc", ["https://gw.example.com"], loc)).toBe(true);
   });
 
   test("empty baseUrl never matches", () => {
-    expect(_matchesAny("https://gw.example.com/x", "")).toBe(false);
+    expect(_matchesAny("https://gw.example.com/x", [""])).toBe(false);
   });
 });
 
@@ -37,7 +37,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
   test("adds Authorization header on gateway URL with token present", async () => {
     const target = makeFakeTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
@@ -54,7 +54,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
     const target = makeFakeTarget();
     const originalFetch = target.fetch;
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
@@ -69,7 +69,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
   test("omits Authorization header when getToken returns undefined", async () => {
     const target = makeFakeTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => undefined,
       target,
     });
@@ -84,7 +84,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
   test("omits Authorization header when getToken returns empty string", async () => {
     const target = makeFakeTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "",
       target,
     });
@@ -99,7 +99,7 @@ describe("GatewayAuthInterceptor — fetch wrapping", () => {
   test("does not overwrite a pre-existing Authorization header", async () => {
     const target = makeFakeTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
@@ -120,7 +120,7 @@ describe("GatewayAuthInterceptor — fetch with Request argument", () => {
   test("adds Authorization when called with a Request to the gateway", async () => {
     const target = makeFakeTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
@@ -137,7 +137,7 @@ describe("GatewayAuthInterceptor — fetch with Request argument", () => {
   test("original Request object is not mutated", async () => {
     const target = makeFakeTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
@@ -188,7 +188,7 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
   test("adds Authorization header on XHR.send for gateway URL", () => {
     const ctx = makeXhrTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-xyz",
       target: ctx.target,
     });
@@ -206,7 +206,7 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
   test("does not add Authorization header when URL is not a gateway URL", () => {
     const ctx = makeXhrTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-xyz",
       target: ctx.target,
     });
@@ -222,7 +222,7 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
   test("does not add Authorization header when token is empty", () => {
     const ctx = makeXhrTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "",
       target: ctx.target,
     });
@@ -237,7 +237,7 @@ describe("GatewayAuthInterceptor — XHR wrapping", () => {
   test("does not overwrite pre-set Authorization on XHR", () => {
     const ctx = makeXhrTarget();
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-xyz",
       target: ctx.target,
     });
@@ -261,14 +261,14 @@ describe("GatewayAuthInterceptor — idempotency", () => {
     const originalFetch = target.fetch;
 
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
     const afterFirst = target.fetch;
 
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
@@ -297,19 +297,77 @@ describe("GatewayAuthInterceptor — idempotency", () => {
     };
 
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
     const sendAfterFirst = target.XMLHttpRequest.prototype.send;
 
     installBearerTokenInterceptor({
-      gatewayBaseUrl: BASE,
+      urlPatterns: [BASE],
       getToken: () => "tkn-abc",
       target,
     });
     const sendAfterSecond = target.XMLHttpRequest.prototype.send;
 
     expect(sendAfterSecond).toBe(sendAfterFirst);
+  });
+});
+
+describe("BearerTokenInterceptor — multi-URL support (startsWith matching, pre-origin)", () => {
+  const BASE_A = "https://api-a.example.com";
+  const BASE_B = "https://api-b.example.com";
+
+  test("adds Authorization on fetch to the first configured URL", async () => {
+    const target = makeFakeTarget();
+    installBearerTokenInterceptor({
+      urlPatterns: [BASE_A, BASE_B],
+      getToken: () => "tkn-abc",
+      target,
+    });
+
+    await target.fetch(`${BASE_A}/x`);
+
+    const [, init] = target.fetch.mock.calls[0];
+    expect(new Headers(init.headers).get("Authorization")).toBe("Bearer tkn-abc");
+  });
+
+  test("adds Authorization on fetch to the second configured URL", async () => {
+    const target = makeFakeTarget();
+    installBearerTokenInterceptor({
+      urlPatterns: [BASE_A, BASE_B],
+      getToken: () => "tkn-abc",
+      target,
+    });
+
+    await target.fetch(`${BASE_B}/y`);
+
+    const [, init] = target.fetch.mock.calls[0];
+    expect(new Headers(init.headers).get("Authorization")).toBe("Bearer tkn-abc");
+  });
+
+  test("leaves a URL not in the list alone", async () => {
+    const target = makeFakeTarget();
+    installBearerTokenInterceptor({
+      urlPatterns: [BASE_A, BASE_B],
+      getToken: () => "tkn-abc",
+      target,
+    });
+
+    await target.fetch("https://other.example.com/z");
+
+    const [, init] = target.fetch.mock.calls[0];
+    expect(new Headers((init && init.headers) || {}).get("Authorization")).toBeNull();
+  });
+
+  test("empty urlPatterns array is a no-op: fetch not wrapped", async () => {
+    const target = makeFakeTarget();
+    const originalFetch = target.fetch;
+    installBearerTokenInterceptor({
+      urlPatterns: [],
+      getToken: () => "tkn-abc",
+      target,
+    });
+    expect(target.fetch).toBe(originalFetch);
   });
 });

@@ -24,7 +24,7 @@ Formio.setBaseUrl(AppConfig.apiUrl);
 
 if (AppConfig.storageGatewayUrl) {
   installBearerTokenInterceptor({
-    gatewayBaseUrl: AppConfig.storageGatewayUrl,
+    urlPatterns: [AppConfig.storageGatewayUrl],
     getToken: () => {
       try {
         return kcServiceInstance()?.getToken?.() || "";

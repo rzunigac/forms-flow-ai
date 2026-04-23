@@ -5,7 +5,7 @@ function normalizeBaseUrl(baseUrl) {
   return baseUrl.replace(/\/+$/, "");
 }
 
-export function _matchesAny(requestUrl, baseUrl, locationHref) {
+function _matchesOne(requestUrl, baseUrl, locationHref) {
   const normalized = normalizeBaseUrl(baseUrl);
   if (!normalized) return false;
   let absolute;
@@ -14,21 +14,32 @@ export function _matchesAny(requestUrl, baseUrl, locationHref) {
   } catch (_e) {
     return false;
   }
-  return absolute === normalized || absolute.startsWith(normalized + "/") || absolute.startsWith(normalized + "?") || absolute.startsWith(normalized + "#");
+  return (
+    absolute === normalized ||
+    absolute.startsWith(normalized + "/") ||
+    absolute.startsWith(normalized + "?") ||
+    absolute.startsWith(normalized + "#")
+  );
 }
 
-export function installBearerTokenInterceptor({ gatewayBaseUrl, getToken, target }) {
+export function _matchesAny(requestUrl, baseUrls, locationHref) {
+  if (!Array.isArray(baseUrls) || baseUrls.length === 0) return false;
+  return baseUrls.some((b) => _matchesOne(requestUrl, b, locationHref));
+}
+
+export function installBearerTokenInterceptor({ urlPatterns, getToken, target }) {
   const t = target || (typeof window !== "undefined" ? window : undefined);
   if (!t) return;
-  const base = normalizeBaseUrl(gatewayBaseUrl);
-  if (!base) return;
 
-  wrapFetch(t, base, getToken);
-  wrapXhr(t, base, getToken);
-  console.log("[BearerTokenInterceptor] installed for base:", base);
+  const patterns = Array.isArray(urlPatterns) ? urlPatterns.filter(Boolean) : [];
+  if (patterns.length === 0) return;
+
+  wrapFetch(t, patterns, getToken);
+  wrapXhr(t, patterns, getToken);
+  console.log("[BearerTokenInterceptor] installed for patterns:", patterns);
 }
 
-function wrapFetch(target, base, getToken) {
+function wrapFetch(target, patterns, getToken) {
   const originalFetch = target.fetch;
   if (!originalFetch) return;
   if (originalFetch.__bearerTokenAuthInstalled) return;
@@ -36,11 +47,10 @@ function wrapFetch(target, base, getToken) {
   const wrapped = new Proxy(originalFetch, {
     apply(fn, _thisArg, [input, init]) {
       const isRequest = typeof Request !== "undefined" && input instanceof Request;
-      const url =
-        typeof input === "string" ? input : (input && input.url) || "";
+      const url = typeof input === "string" ? input : (input && input.url) || "";
       const locationHref = target.location && target.location.href;
 
-      if (!_matchesAny(url, base, locationHref)) {
+      if (!_matchesAny(url, patterns, locationHref)) {
         return fn.call(target, input, init);
       }
 
@@ -73,7 +83,7 @@ function wrapFetch(target, base, getToken) {
   target.fetch = wrapped;
 }
 
-function wrapXhr(target, base, getToken) {
+function wrapXhr(target, patterns, getToken) {
   const XHR = target.XMLHttpRequest;
   if (!XHR || !XHR.prototype) return;
   const proto = XHR.prototype;
@@ -99,7 +109,7 @@ function wrapXhr(target, base, getToken) {
   proto.send = function (body) {
     const url = this.__bearerTokenAuthUrl || "";
     const locationHref = target.location && target.location.href;
-    if (_matchesAny(url, base, locationHref) && !this.__bearerTokenAuthHasAuthHeader) {
+    if (_matchesAny(url, patterns, locationHref) && !this.__bearerTokenAuthHasAuthHeader) {
       const token = getToken && getToken();
       if (token) {
         originalSetRequestHeader.call(this, "Authorization", `Bearer ${token}`);
