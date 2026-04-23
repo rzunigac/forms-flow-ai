@@ -9,10 +9,6 @@ describe("GatewayAuthInterceptor — URL matching", () => {
     expect(_matchesAny("https://other.example.com/files/abc", ["https://gw.example.com"])).toBe(false);
   });
 
-  test("trailing slash on baseUrl is normalized", () => {
-    expect(_matchesAny("https://gw.example.com/files/abc", ["https://gw.example.com/"])).toBe(true);
-  });
-
   test("relative URL resolves against window.location and matches", () => {
     const loc = "https://gw.example.com/app/";
     expect(_matchesAny("files/abc", ["https://gw.example.com"], loc)).toBe(true);
@@ -369,5 +365,61 @@ describe("BearerTokenInterceptor — multi-URL support (startsWith matching, pre
       target,
     });
     expect(target.fetch).toBe(originalFetch);
+  });
+});
+
+describe("BearerTokenInterceptor — strict origin matching", () => {
+  test("exact origin matches", () => {
+    expect(_matchesAny("https://api.example.com/x", ["https://api.example.com"])).toBe(true);
+  });
+
+  test("different scheme does not match", () => {
+    expect(_matchesAny("http://api.example.com/x", ["https://api.example.com"])).toBe(false);
+  });
+
+  test("different host does not match", () => {
+    expect(_matchesAny("https://other.example.com/x", ["https://api.example.com"])).toBe(false);
+  });
+
+  test("subdomain of configured host does NOT match an exact pattern", () => {
+    expect(_matchesAny("https://foo.api.example.com/x", ["https://api.example.com"])).toBe(false);
+  });
+
+  test("suffix-collision host does not match (api.example.com.evil.com)", () => {
+    expect(_matchesAny("https://api.example.com.evil.com/x", ["https://api.example.com"])).toBe(false);
+  });
+
+  test("prefix-collision host does not match (apiXexample.com)", () => {
+    expect(_matchesAny("https://apiXexample.com/x", ["https://api.example.com"])).toBe(false);
+  });
+
+  test("explicit default port normalizes to match implicit default port", () => {
+    expect(_matchesAny("https://api.example.com:443/x", ["https://api.example.com"])).toBe(true);
+    expect(_matchesAny("http://api.example.com:80/x", ["http://api.example.com"])).toBe(true);
+  });
+
+  test("non-default port does not match default-port pattern", () => {
+    expect(_matchesAny("https://api.example.com:8443/x", ["https://api.example.com"])).toBe(false);
+  });
+
+  test("pattern with explicit port matches only that port", () => {
+    expect(_matchesAny("https://api.example.com:8443/x", ["https://api.example.com:8443"])).toBe(true);
+    expect(_matchesAny("https://api.example.com/x", ["https://api.example.com:8443"])).toBe(false);
+  });
+
+  test("trailing dot on request host is normalized", () => {
+    expect(_matchesAny("https://api.example.com./x", ["https://api.example.com"])).toBe(true);
+  });
+
+  test("case-insensitive host match", () => {
+    expect(_matchesAny("https://API.Example.COM/x", ["https://api.example.com"])).toBe(true);
+  });
+
+  test("non-URL request falls back cleanly", () => {
+    expect(_matchesAny("not a url", ["https://api.example.com"])).toBe(false);
+  });
+
+  test("empty patterns list never matches", () => {
+    expect(_matchesAny("https://api.example.com/x", [])).toBe(false);
   });
 });

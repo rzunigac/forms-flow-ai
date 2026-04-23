@@ -1,30 +1,90 @@
 /* istanbul ignore file */
 
-function normalizeBaseUrl(baseUrl) {
-  if (!baseUrl || typeof baseUrl !== "string") return "";
-  return baseUrl.replace(/\/+$/, "");
+function defaultPortFor(scheme) {
+  return scheme === "https:" ? "443" : "80";
 }
 
-function _matchesOne(requestUrl, baseUrl, locationHref) {
-  const normalized = normalizeBaseUrl(baseUrl);
-  if (!normalized) return false;
-  let absolute;
-  try {
-    absolute = new URL(requestUrl, locationHref || (typeof window !== "undefined" ? window.location.href : undefined)).href;
-  } catch (_e) {
-    return false;
+function normalizeHost(host) {
+  if (typeof host !== "string") return "";
+  return host.toLowerCase().replace(/\.$/, "");
+}
+
+export function _parsePattern(raw) {
+  if (typeof raw !== "string") return { valid: false, reason: "not a string" };
+  const trimmed = raw.trim();
+  if (!trimmed) return { valid: false, reason: "empty" };
+
+  const m = /^(https?):\/\/(.+)$/i.exec(trimmed);
+  if (!m) return { valid: false, reason: "scheme must be http:// or https://" };
+
+  const scheme = m[1].toLowerCase() + ":";
+  let rest = m[2];
+
+  // Strip path/query/hash — origin-only matching
+  const delimIdx = rest.search(/[\/?#]/);
+  if (delimIdx !== -1) rest = rest.slice(0, delimIdx);
+
+  // Split host:port (handle IPv6 bracketed hosts too)
+  let host, port;
+  if (rest.startsWith("[")) {
+    const closeIdx = rest.indexOf("]");
+    if (closeIdx === -1) return { valid: false, reason: "unterminated IPv6 bracket" };
+    host = rest.slice(0, closeIdx + 1);
+    const remainder = rest.slice(closeIdx + 1);
+    if (!remainder) {
+      port = defaultPortFor(scheme);
+    } else if (remainder.startsWith(":") && /^\d+$/.test(remainder.slice(1))) {
+      port = remainder.slice(1);
+    } else {
+      return { valid: false, reason: "invalid characters after IPv6 host" };
+    }
+  } else {
+    const colonIdx = rest.lastIndexOf(":");
+    if (colonIdx !== -1 && /^\d+$/.test(rest.slice(colonIdx + 1))) {
+      host = rest.slice(0, colonIdx);
+      port = rest.slice(colonIdx + 1);
+    } else {
+      host = rest;
+      port = defaultPortFor(scheme);
+    }
   }
-  return (
-    absolute === normalized ||
-    absolute.startsWith(normalized + "/") ||
-    absolute.startsWith(normalized + "?") ||
-    absolute.startsWith(normalized + "#")
-  );
+
+  host = normalizeHost(host);
+  if (!host) return { valid: false, reason: "empty host" };
+
+  return { valid: true, scheme, port, host, wildcard: false };
 }
 
-export function _matchesAny(requestUrl, baseUrls, locationHref) {
-  if (!Array.isArray(baseUrls) || baseUrls.length === 0) return false;
-  return baseUrls.some((b) => _matchesOne(requestUrl, b, locationHref));
+function _parsedOriginOf(requestUrl, locationHref) {
+  let url;
+  try {
+    url = new URL(requestUrl, locationHref || (typeof window !== "undefined" ? window.location.href : undefined));
+  } catch (_e) {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  const host = normalizeHost(url.hostname);
+  const port = url.port || defaultPortFor(url.protocol);
+  return { scheme: url.protocol, host, port };
+}
+
+function _matchesPattern(origin, pattern) {
+  if (!origin) return false;
+  if (origin.scheme !== pattern.scheme) return false;
+  if (origin.port !== pattern.port) return false;
+  return origin.host === pattern.host;
+}
+
+export function _matchesAny(requestUrl, rawPatterns, locationHref) {
+  if (!Array.isArray(rawPatterns) || rawPatterns.length === 0) return false;
+  const origin = _parsedOriginOf(requestUrl, locationHref);
+  if (!origin) return false;
+  for (const raw of rawPatterns) {
+    const parsed = _parsePattern(raw);
+    if (!parsed.valid) continue;
+    if (_matchesPattern(origin, parsed)) return true;
+  }
+  return false;
 }
 
 export function installBearerTokenInterceptor({ urlPatterns, getToken, target }) {
