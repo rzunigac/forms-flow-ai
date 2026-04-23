@@ -91,16 +91,24 @@ function _matchesPattern(origin, pattern) {
   return origin.host === pattern.host;
 }
 
-export function _matchesAny(requestUrl, rawPatterns, locationHref) {
-  if (!Array.isArray(rawPatterns) || rawPatterns.length === 0) return false;
+function _matchesAnyParsed(requestUrl, parsedPatterns, locationHref) {
+  if (!Array.isArray(parsedPatterns) || parsedPatterns.length === 0) return false;
   const origin = _parsedOriginOf(requestUrl, locationHref);
   if (!origin) return false;
-  for (const raw of rawPatterns) {
-    const parsed = _parsePattern(raw);
-    if (!parsed.valid) continue;
+  for (const parsed of parsedPatterns) {
     if (_matchesPattern(origin, parsed)) return true;
   }
   return false;
+}
+
+export function _matchesAny(requestUrl, rawPatterns, locationHref) {
+  if (!Array.isArray(rawPatterns) || rawPatterns.length === 0) return false;
+  const parsed = [];
+  for (const raw of rawPatterns) {
+    const p = _parsePattern(raw);
+    if (p.valid) parsed.push(p);
+  }
+  return _matchesAnyParsed(requestUrl, parsed, locationHref);
 }
 
 export function installBearerTokenInterceptor({ urlPatterns, getToken, target }) {
@@ -110,24 +118,26 @@ export function installBearerTokenInterceptor({ urlPatterns, getToken, target })
   const rawPatterns = Array.isArray(urlPatterns) ? urlPatterns.filter(Boolean) : [];
   if (rawPatterns.length === 0) return;
 
-  const validPatterns = [];
+  const parsedPatterns = [];
+  const validRaws = [];
   for (const raw of rawPatterns) {
     const parsed = _parsePattern(raw);
     if (parsed.valid) {
-      validPatterns.push(raw);
+      parsedPatterns.push(parsed);
+      validRaws.push(raw);
     } else {
       console.warn(`[BearerTokenInterceptor] invalid pattern "${raw}" ignored: ${parsed.reason}`);
     }
   }
 
-  if (validPatterns.length === 0) {
+  if (parsedPatterns.length === 0) {
     console.warn("[BearerTokenInterceptor] no valid patterns — not installing");
     return;
   }
 
-  wrapFetch(t, validPatterns, getToken);
-  wrapXhr(t, validPatterns, getToken);
-  console.log("[BearerTokenInterceptor] installed for patterns:", validPatterns);
+  wrapFetch(t, parsedPatterns, getToken);
+  wrapXhr(t, parsedPatterns, getToken);
+  console.log("[BearerTokenInterceptor] installed for patterns:", validRaws);
 }
 
 function wrapFetch(target, patterns, getToken) {
@@ -141,7 +151,7 @@ function wrapFetch(target, patterns, getToken) {
       const url = typeof input === "string" ? input : (input && input.url) || "";
       const locationHref = target.location && target.location.href;
 
-      if (!_matchesAny(url, patterns, locationHref)) {
+      if (!_matchesAnyParsed(url, patterns, locationHref)) {
         return fn.call(target, input, init);
       }
 
@@ -200,7 +210,7 @@ function wrapXhr(target, patterns, getToken) {
   proto.send = function (body) {
     const url = this.__bearerTokenAuthUrl || "";
     const locationHref = target.location && target.location.href;
-    if (_matchesAny(url, patterns, locationHref) && !this.__bearerTokenAuthHasAuthHeader) {
+    if (_matchesAnyParsed(url, patterns, locationHref) && !this.__bearerTokenAuthHasAuthHeader) {
       const token = getToken && getToken();
       if (token) {
         originalSetRequestHeader.call(this, "Authorization", `Bearer ${token}`);

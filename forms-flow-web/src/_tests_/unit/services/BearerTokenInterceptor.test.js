@@ -504,27 +504,37 @@ describe("BearerTokenInterceptor — install-time pattern validation", () => {
     const [, init] = target.fetch.mock.calls[0];
     expect(new Headers((init && init.headers) || {}).get("Authorization")).toBeNull();
     expect(warnSpy).toHaveBeenCalled();
-    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+    expect(
+      warnSpy.mock.calls.some((c) => String(c[0]).includes('"https://*.com"'))
+    ).toBe(true);
   });
 
   test("logs warning for bare https://*", () => {
     installWith(["https://*"]);
-    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+    expect(
+      warnSpy.mock.calls.some((c) => String(c[0]).includes('"https://*"'))
+    ).toBe(true);
   });
 
   test("logs warning for non-http scheme", () => {
     installWith(["ftp://api.example.com"]);
-    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+    expect(
+      warnSpy.mock.calls.some((c) => String(c[0]).includes('"ftp://api.example.com"'))
+    ).toBe(true);
   });
 
   test("logs warning for non-leftmost wildcard", () => {
     installWith(["https://foo.*.com"]);
-    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+    expect(
+      warnSpy.mock.calls.some((c) => String(c[0]).includes('"https://foo.*.com"'))
+    ).toBe(true);
   });
 
   test("logs warning for partial-label wildcard", () => {
     installWith(["https://*foo.example.com"]);
-    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes("invalid pattern"))).toBe(true);
+    expect(
+      warnSpy.mock.calls.some((c) => String(c[0]).includes('"https://*foo.example.com"'))
+    ).toBe(true);
   });
 
   test("valid and invalid patterns coexist; valid ones still work", async () => {
