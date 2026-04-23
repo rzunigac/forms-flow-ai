@@ -21,7 +21,7 @@ export function _parsePattern(raw) {
   let rest = m[2];
 
   // Strip path/query/hash — origin-only matching
-  const delimIdx = rest.search(/[\/?#]/);
+  const delimIdx = rest.search(/[/?#]/);
   if (delimIdx !== -1) rest = rest.slice(0, delimIdx);
 
   // Split host:port (handle IPv6 bracketed hosts too)
