@@ -22,9 +22,9 @@ if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === "object") {
 Formio.setProjectUrl(AppConfig.projectUrl);
 Formio.setBaseUrl(AppConfig.apiUrl);
 
-if (AppConfig.storageGatewayUrl) {
+if (AppConfig.bearerTokenInjectionEnabled && AppConfig.bearerTokenUrls.length > 0) {
   installBearerTokenInterceptor({
-    urlPatterns: [AppConfig.storageGatewayUrl],
+    urlPatterns: AppConfig.bearerTokenUrls,
     getToken: () => {
       try {
         return kcServiceInstance()?.getToken?.() || "";
@@ -33,6 +33,8 @@ if (AppConfig.storageGatewayUrl) {
       }
     },
   });
+} else if (AppConfig.bearerTokenInjectionEnabled && AppConfig.bearerTokenUrls.length === 0) {
+  console.warn("[BearerTokenInterceptor] REACT_APP_BEARER_TOKEN_INJECTION_ENABLED=true but REACT_APP_BEARER_TOKEN_URLS is empty — not installing");
 }
 
 // Set custom formio elements - Code splitted
