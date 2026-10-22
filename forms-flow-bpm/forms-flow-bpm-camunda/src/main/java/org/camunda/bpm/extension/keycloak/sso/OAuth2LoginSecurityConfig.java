@@ -162,7 +162,7 @@ public class OAuth2LoginSecurityConfig  {
 		String userNameAttribute = this.applicationContext.getEnvironment().getRequiredProperty(
 				"spring.security.oauth2.client.provider." + this.configProps.getProvider() + ".user-name-attribute");
 
-		filterRegistration.setFilter(new KeycloakAuthenticationFilter(identityService, clientService, userNameAttribute, enableMultiTenancy, enableClientAuth));
+		filterRegistration.setFilter(new KeycloakAuthenticationFilter(identityService, clientService, userNameAttribute, enableClientAuth, enableMultiTenancy));
 		filterRegistration.setOrder(102);
 		filterRegistration.addUrlPatterns("/engine-rest/*");
 		filterRegistration.addUrlPatterns("/engine-rest-ext/*");

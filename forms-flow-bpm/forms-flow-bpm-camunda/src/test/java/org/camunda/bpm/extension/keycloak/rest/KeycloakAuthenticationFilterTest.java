@@ -140,4 +140,21 @@ public class KeycloakAuthenticationFilterTest {
 		assertTrue(userRolesCaptor.getValue().contains(tenantKey+"-camunda-admin"));
 		assertTrue(userRolesCaptor.getValue().contains(tenantKey+"-formsflow-reviewer"));
 	}
+
+	/**
+	 * A request without an authenticated principal (no bearer token, or a path
+	 * outside the Spring Security chain such as /engine-rest) must be answered
+	 * with 401, not fail with a NullPointerException (500).
+	 */
+	@Test
+	public void doFilterWithoutAuthenticationReturnsUnauthorized() throws IOException, ServletException {
+		keycloakAuthenticationFilter = new KeycloakAuthenticationFilter(identityService, clientService, "test-user", false, false);
+		SecurityContextHolder.clearContext();
+		jakarta.servlet.http.HttpServletResponse httpResponse = mock(jakarta.servlet.http.HttpServletResponse.class);
+
+		keycloakAuthenticationFilter.doFilter(request, httpResponse, chain);
+
+		verify(httpResponse).sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+		verify(chain, org.mockito.Mockito.never()).doFilter(request, httpResponse);
+	}
 }

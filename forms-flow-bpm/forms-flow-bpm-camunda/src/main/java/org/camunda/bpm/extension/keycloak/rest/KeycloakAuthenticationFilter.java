@@ -13,6 +13,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.IdentityService;
@@ -78,6 +79,11 @@ public class KeycloakAuthenticationFilter implements Filter {
 
 		// Extract user-name-attribute of the JWT / OAuth2 token
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null) {
+			// No bearer token, or a path outside the security chain (e.g. /engine-rest).
+			((HttpServletResponse) response).sendError(HttpServletResponse.SC_UNAUTHORIZED);
+			return;
+		}
 		String userId = null;
 		Map<String, Object> claims;
 		if (authentication instanceof JwtAuthenticationToken) {
