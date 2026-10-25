@@ -4,6 +4,10 @@ FROM node:18.20.0-alpine as build-stage
 # Set working directory
 WORKDIR /forms-flow-web-root-config/app
 
+# Dependency downloads persist between builds in a cache mount (not part of the image).
+# build.sh --no-cache sets CACHE_ID to start from an empty one.
+ARG CACHE_ID=shared
+
 # Set build arguments
 ARG NODE_ENV
 ARG MF_FORMSFLOW_WEB_URL
@@ -36,7 +40,7 @@ RUN apk update && apk upgrade && \
 COPY package-lock.json /forms-flow-web-root-config/app/package-lock.json
 COPY package.json /forms-flow-web-root-config/app/package.json
 COPY env.sh /forms-flow-web-root-config/app/env.sh
-RUN npm ci --omit=dev
+RUN --mount=type=cache,id=ff-npm-$CACHE_ID,target=/root/.npm npm ci --omit=dev
 
 # Copy source code
 COPY . /forms-flow-web-root-config/app/

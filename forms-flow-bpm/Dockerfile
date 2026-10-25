@@ -12,10 +12,15 @@ COPY forms-flow-bpm-camunda/pom.xml ./forms-flow-bpm-camunda/
 COPY forms-flow-bpm-camunda/src ./forms-flow-bpm-camunda/src/
 COPY forms-flow-bpm-utils/src ./forms-flow-bpm-utils/src/
 
-# This allows Docker to cache most of the maven dependencies
-#TODO This needs to be fixed, It throws error saying sub modules cannot be found
-# RUN mvn -s /usr/share/maven/ref/settings-docker.xml dependency:resolve-plugins dependency:resolve dependency:go-offline -B -P camunda
-RUN mvn -s /usr/share/maven/ref/settings-docker.xml install -P camunda
+# Dependency downloads persist between builds in a cache mount (not part of the image), so a
+# source change doesn't download everything again. A separate dependency layer
+# (dependency:go-offline) doesn't work here: it can't resolve netty-tcnative's
+# ${os.detected.classifier}, which only the full build sets. build.sh --no-cache sets
+# CACHE_ID to start from an empty cache.
+ARG CACHE_ID=shared
+# Maven 3.8 waits 30 min on a stalled download by default: give up after 60 s and retry.
+RUN --mount=type=cache,id=ff-m2-$CACHE_ID,target=/root/.m2 \
+    mvn -B -Dmaven.wagon.rto=60000 -Dmaven.wagon.http.retryHandler.count=3 -s /usr/share/maven/ref/settings-docker.xml install -P camunda
 
 
 FROM openjdk:21-ea-jdk
