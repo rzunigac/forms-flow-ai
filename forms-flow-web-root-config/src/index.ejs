@@ -16,7 +16,8 @@
   <link rel="stylesheet" href="https://unpkg.com/dmn-js@16.8.0/dist/assets/dmn-js-decision-table-controls.css">
   <link rel="stylesheet" href="https://unpkg.com/dmn-js@16.8.0/dist/assets/dmn-js-literal-expression.css">
   <link rel="stylesheet" href="https://unpkg.com/dmn-js@16.8.0/dist/assets/dmn-font/css/dmn.css">
-  <link rel="stylesheet" href="https://forms-flow-microfrontends.aot-technologies.com/forms-flow-theme@v7.3.0/forms-flow-theme.min.css">
+  <!-- Base theme: written at container start (the bundled theme, or one mounted by the deployment). -->
+  <link rel="stylesheet" href="/config/theme.css">
 
   <!-- required styles from cdn -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap">
@@ -80,8 +81,10 @@
   </script>
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/single-spa@5.9.0/lib/system/single-spa.min.js" as="script">
 
-  <!-- Add your organization's prod import map URL to this script's src  -->
-  <!-- <script type="systemjs-importmap" src="/importmap.json"></script> -->
+  <% if (!isLocal) { %>
+  <!-- Written at container start: same-origin bundles by default, overrides only from deploy config. -->
+  <script type="systemjs-importmap" src="/config/importmap.json"></script>
+  <% } else { %>
      <script type="systemjs-importmap">
         {
           "imports": {
@@ -96,6 +99,7 @@
           }
         }
       </script>
+  <% } %>
     <% if (isLocal) { %>
       <script type="systemjs-importmap">
         {
@@ -122,8 +126,9 @@
   -->
   <!-- <script src="https://cdn.jsdelivr.net/npm/zone.js@0.11.3/dist/zone.min.js"></script> -->
 
-  <script src="https://cdn.jsdelivr.net/npm/import-map-overrides@2.2.0/dist/import-map-overrides.js"></script>
   <% if (isLocal) { %>
+  <!-- Development only: overrides in localStorage can swap any MFE for arbitrary code (report 08 S2). -->
+  <script src="https://cdn.jsdelivr.net/npm/import-map-overrides@2.2.0/dist/import-map-overrides.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/systemjs@6.8.3/dist/system.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/systemjs@6.8.3/dist/extras/amd.js"></script>
   <% } else { %>
@@ -139,6 +144,8 @@
   <script>
     System.import('@formsflow/root-config');
   </script>
+  <% if (isLocal) { %>
   <import-map-overrides-full show-when-local-storage="devtools" dev-libs></import-map-overrides-full>
+  <% } %>
 </body>
 </html>

@@ -1,0 +1,4 @@
+# The micro-frontend bundles the web image carries: an image@digest built by ci/build-bundles.sh in
+# forms-flow-ai-micro-front-ends (Dockerfile.bundles). Change it in a commit of its own.
+# Source: forms-flow-ai-micro-front-ends support/7.3.x at 7d89cb172
+localhost:5000/formsflow/forms-flow-mfe-bundles@sha256:8921886679ed895bd2174488d384f50cf215d6b359f1e6e6b2b091f2b4e1cae8

@@ -1,0 +1,8 @@
+# The build context is the repo root: send only what this image needs.
+*
+!forms-flow-web
+!forms-flow-web-root-config
+**/node_modules
+**/build
+**/dist
+**/.env
