@@ -26,7 +26,7 @@ WORKDIR /vendor
 COPY forms-flow-web-root-config/vendor/ forms-flow-web-root-config/src/index.ejs ./
 RUN --mount=type=cache,id=ff-npm-$CACHE_ID,target=/root/.npm \
     npm config set fetch-retries 6 && npm config set fetch-retry-maxtimeout 120000 && \
-    node vendor.js index.ejs packages.txt /out/vendor
+    node vendor.js index.ejs packages.txt formio-cdn.txt /out/vendor
 
 # --- root-config ----------------------------------------------------------------------------
 FROM node:18.20.0-alpine AS build-stage

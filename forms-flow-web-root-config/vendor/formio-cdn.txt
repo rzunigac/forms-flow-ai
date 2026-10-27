@@ -1,0 +1,37 @@
+# The libraries formio loads at runtime from Formio.cdn (https://cdn.form.io by default), served from
+# /vendor/formio/ instead: public/formio-cdn.js points formio there.
+#
+# <path under /vendor/formio/, as under https://cdn.form.io/>   <source>
+# Source: <name>@<version>/<path> in a package pinned in packages.txt (a path ending in / copies the
+# directory's .js, .css and .json files), or a URL and its sha256 for a file not published on npm.
+#
+# Versions: formio's CDN.js in @aot-technologies/formiojs 1.0.3, which every bundle uses. Each npm file is
+# byte-identical to cdn.form.io's, except quill.bubble.css ("\D7" for "\00D7", the same character) and
+# the timezone data: cdn.form.io serves tz 2023c as "latest"; this is moment-timezone 0.5.48's (2025b),
+# the moment-timezone version the bundles run.
+
+# Date and time fields (CalendarWidget); index.ejs also loads some of these
+flatpickr-formio/4.6.13-formio.3/flatpickr.min.js       flatpickr-formio@4.6.13-formio.3/dist/flatpickr.min.js
+flatpickr-formio/4.6.13-formio.3/flatpickr.min.css      flatpickr-formio@4.6.13-formio.3/dist/flatpickr.min.css
+flatpickr-formio/4.6.13-formio.3/l10n/                  flatpickr-formio@4.6.13-formio.3/dist/l10n/
+shortcut-buttons-flatpickr/0.4.0/shortcut-buttons-flatpickr.min.js  shortcut-buttons-flatpickr@0.4.0/dist/shortcut-buttons-flatpickr.min.js
+shortcut-buttons-flatpickr/0.4.0/themes/light.min.css   shortcut-buttons-flatpickr@0.4.0/dist/themes/light.min.css
+moment-timezone/data/packed/latest.json                 moment-timezone@0.5.48/data/packed/latest.json
+
+# Text areas with an editor
+ckeditor/19.0.0/ckeditor.js     https://cdn.form.io/ckeditor/19.0.0/ckeditor.js 1cacd0b63d0229f6733aba727596a20431145f2a17e8c8db1e4b009300b7e81e
+quill/2.0.0-dev.3/quill.min.js      quill@2.0.0-dev.3/dist/quill.min.js
+quill/2.0.0-dev.3/quill.snow.css    quill@2.0.0-dev.3/dist/quill.snow.css
+quill/2.0.0-dev.3/quill.bubble.css  quill@2.0.0-dev.3/dist/quill.bubble.css
+
+# Code editor (form builder: custom logic, JSON); ace.js loads the modes and workers next to it
+ace/1.4.12/ace.js                ace-builds@1.4.12/src-min/ace.js
+ace/1.4.12/mode-javascript.js    ace-builds@1.4.12/src-min/mode-javascript.js
+ace/1.4.12/mode-json.js          ace-builds@1.4.12/src-min/mode-json.js
+ace/1.4.12/mode-html.js          ace-builds@1.4.12/src-min/mode-html.js
+ace/1.4.12/mode-handlebars.js    ace-builds@1.4.12/src-min/mode-handlebars.js
+ace/1.4.12/theme-xcode.js        ace-builds@1.4.12/src-min/theme-xcode.js
+ace/1.4.12/worker-javascript.js  ace-builds@1.4.12/src-min/worker-javascript.js
+ace/1.4.12/worker-json.js        ace-builds@1.4.12/src-min/worker-json.js
+ace/1.4.12/worker-html.js        ace-builds@1.4.12/src-min/worker-html.js
+ace/1.4.12/worker-css.js         ace-builds@1.4.12/src-min/worker-css.js

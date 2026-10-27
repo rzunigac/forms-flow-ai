@@ -1,21 +1,27 @@
-# Third-party browser assets served from /vendor/ (analysis 20, stage 2a).
+# Third-party browser assets served from /vendor/ (analysis 20, stages 2a and 2b).
 #
 # index.ejs references them as "<%= vendor %>/<name>@<version>/<path>": jsDelivr's layout, so local
-# development loads the same files from jsDelivr. The image build (vendor.js) downloads each package
-# from the npm registry, checks it against the integrity below and copies only the referenced files,
-# plus what their CSS loads (fonts, images).
+# development loads the same files from jsDelivr. formio-cdn.txt maps the libraries formio loads at
+# runtime to files in these packages. The image build (vendor.js) downloads each package from the npm
+# registry, checks it against the integrity below and copies only the referenced files, plus what their
+# CSS loads (fonts, images).
 #
-# To update a package: change the version here and in index.ejs, and take the new integrity from
+# To update a package: change the version here and where it is referenced, and take the new integrity from
 #   npm view <name>@<version> dist.integrity
 #
 # <name>@<version>                    <npm dist.integrity>
 @bpmn-io/properties-panel@3.48.0      sha512-Dzf2TvEZtQBO9lmX0yfW3QwAuUNnoe8ZGHUQanOkKscGyVpIjlToRlrAfuhxoOBV2yYesO/sMHHUSrJl23TL2Q==
 @fontsource/nunito-sans@5.3.0        sha512-CctNhebQ2YYJUwVMCAkHexQg7yedfz9s8JzaETALyc9QIQuDFRlNTWXux9H5PsNLgptPkrzRDomAdLJt1sDFpQ==
 @fortawesome/fontawesome-free@6.4.2  sha512-m5cPn3e2+FDCOgi1mz0RexTUvvQibBebOUlUlW0+YrMjDTPkiJ6VTKukA1GRsvRw+12KyJndNjj0O4AgTxm2Pg==
+ace-builds@1.4.12                    sha512-G+chJctFPiiLGvs3+/Mly3apXTcfgE45dT5yp12BcWZ1kUs+gm0qd3/fv4gsz6fVag4mM0moHVpjHDIgph6Psg==
 dmn-js@16.8.0                        sha512-1CeOkRG38UGtdjElW386CSqch+bX7mpW8pPPLaaYlixQneDJ7XjbEggFzzjCLOPFp49aiKCJEMg9IAX+MISauw==
+flatpickr-formio@4.6.13-formio.3     sha512-MhUb8ojlMt4wsVulMtpALOpJqcBr6703MEsWWvcVj19Zi1lGFkRd9KEvnP5Yt2frExmTuWRU5jEUT0Ayy0vhrA==
 formiojs@4.13.1                      sha512-bd6QnFdYw8ctR4D/TvsdmKxDeYWydzv5P+zORd2t42+N4RLkud8HiqeKyOK/BIC0OZywAh6oFomSEQH4UNt/Sg==
-react@17.0.2                         sha512-gnhPt75i/dq/z3/6q/0asP78D0u592D5L1pd7M8P+dck6Fu/jJeL6iVVK23fptSUZj8Vjf++7wXA8UNclGQcbA==
+moment-timezone@0.5.48               sha512-f22b8LV1gbTO2ms2j2z13MuPogNoh5UzxL3nzNAYKGraILnbGc9NEE6dyiiiLv46DGRb8A4kg8UKWLjPthxBHw==
+quill@2.0.0-dev.3                    sha512-FiHFpgaHaOyPjuywLBjrHal6RS1gWHoIO9dFUE2ll46Nb0xFDEulHdiFRTPPifrE1HUmAFXJIL3iJjukD+eUEQ==
 react-dom@17.0.2                     sha512-s4h96KtLDUQlsENhMn1ar8t2bEa+q/YAtj8pPPdIjPDGBDIVNsrD9aXNWqspUe6AzKCIG0C1HZZLqLV7qpOBGA==
+react@17.0.2                         sha512-gnhPt75i/dq/z3/6q/0asP78D0u592D5L1pd7M8P+dck6Fu/jJeL6iVVK23fptSUZj8Vjf++7wXA8UNclGQcbA==
 regenerator-runtime@0.13.7           sha512-a54FxoJDIr27pgf7IgeQGxmqUNYrcV338lf/6gH456HZ/PhX+5BcwHXG9ajESmwe6WRO0tAzRUrRmNONWgkrew==
+shortcut-buttons-flatpickr@0.4.0     sha512-JKmT4my3Hm1e18OvG4Q6RcFhN4WRqqpTMkHrvZ7fup/dp6aTIWGVCHdRYtASkp/FCzDlJh6iCLQ/VcwwNpAMoQ==
 single-spa@5.9.0                     sha512-GhOceK36ruH8hhGFR7o3kkbrhoRG0m8/Ygsr16/qJ60El5OSz2WCYL4BFvX9nHwH2jpzgCqgoOWH9O5+So2dvQ==
 systemjs@6.8.3                       sha512-UcTY+FEA1B7e+bpJk1TI+a9Na6LG7wFEqW7ED16cLqLuQfI/9Ri0rsXm3tKlIgNoHyLHZycjdAOijzNbzelgwA==

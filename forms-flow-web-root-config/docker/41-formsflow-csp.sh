@@ -8,10 +8,11 @@
 #           off: no header
 #
 # The policy allows the page's own origin, the origins of the REACT_APP_* URL settings (forms, Keycloak,
-# APIs, BPM; also as ws/wss), MFE_ALLOWED_ORIGINS for scripts, and cdn.form.io until formio's libraries
-# are served from the image (analysis 20, item 8). Deployments add sources per directive, space-separated:
+# APIs, BPM; also as ws/wss) and MFE_ALLOWED_ORIGINS for scripts. Deployments add sources per directive,
+# space-separated:
 #   CSP_SCRIPT_SRC CSP_STYLE_SRC CSP_FONT_SRC CSP_IMG_SRC CSP_CONNECT_SRC CSP_FRAME_SRC CSP_FRAME_ANCESTORS
-# e.g. CSP_CONNECT_SRC="https://api.example.org" for a form that calls that API from the browser.
+# e.g. CSP_CONNECT_SRC="https://api.example.org" for a form that calls that API from the browser. Forms
+# with an address field (Google Maps, Azure Maps, OpenStreetMap) or reCAPTCHA need those hosts too.
 # Keywords such as 'unsafe-inline', and any source with ; , " ' \ $ or `, stop the container.
 set -euf   # -f: sources such as https://*.example.org are not file patterns
 
@@ -48,10 +49,6 @@ for origin in ${MFE_ALLOWED_ORIGINS:-}; do
   esac
 done
 
-formio=https://cdn.form.io
-# forms-flow-web loads two images from AOT's website (analysis 20, item 8)
-aot_images="https://149641023.v2.pressablecdn.com https://i0.wp.com"
-
 # Assignments, so that fail() in extra stops the script.
 script_src=$(extra CSP_SCRIPT_SRC)
 style_src=$(extra CSP_STYLE_SRC)
@@ -71,11 +68,11 @@ directive() {
 # shellcheck disable=SC2086
 policy=$(
   directive default-src "'self'"
-  directive script-src "'self'" "'unsafe-eval'" $formio ${MFE_ALLOWED_ORIGINS:-} $script_src
-  directive style-src "'self'" "'unsafe-inline'" $formio $style_src
-  directive font-src "'self'" data: $formio $font_src
-  directive img-src "'self'" data: blob: $origins $formio $aot_images $img_src
-  directive connect-src "'self'" $origins $sockets $formio $connect_src
+  directive script-src "'self'" "'unsafe-eval'" ${MFE_ALLOWED_ORIGINS:-} $script_src
+  directive style-src "'self'" "'unsafe-inline'" $style_src
+  directive font-src "'self'" data: $font_src
+  directive img-src "'self'" data: blob: $origins $img_src
+  directive connect-src "'self'" $origins $sockets $connect_src
   directive frame-src "'self'" blob: $origins $frame_src
   directive worker-src "'self'" blob:
   directive frame-ancestors "'self'" $frame_ancestors

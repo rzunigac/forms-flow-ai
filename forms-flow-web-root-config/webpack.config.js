@@ -29,6 +29,11 @@ module.exports = (webpackConfigEnv, argv) => {
             webpackConfigEnv && webpackConfigEnv.isLocal
               ? "https://cdn.jsdelivr.net/npm"
               : "/vendor",
+          // formio's runtime libraries: vendor/formio-cdn.txt; cdn.form.io in local development.
+          formioCdn:
+            webpackConfigEnv && webpackConfigEnv.isLocal
+              ? "https://cdn.form.io"
+              : "/vendor/formio",
         },
       }),
       new CopyPlugin({
