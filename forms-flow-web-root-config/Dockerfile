@@ -19,6 +19,15 @@ RUN --mount=type=cache,id=ff-npm-$CACHE_ID,target=/root/.npm \
 COPY forms-flow-web ./
 RUN npm run build && test -f build/forms-flow-web.js
 
+# --- third-party browser assets (/vendor/), from npm tarballs pinned in vendor/packages.txt ---
+FROM node:18.20.0-alpine AS vendor
+ARG CACHE_ID=shared
+WORKDIR /vendor
+COPY forms-flow-web-root-config/vendor/ forms-flow-web-root-config/src/index.ejs ./
+RUN --mount=type=cache,id=ff-npm-$CACHE_ID,target=/root/.npm \
+    npm config set fetch-retries 6 && npm config set fetch-retry-maxtimeout 120000 && \
+    node vendor.js index.ejs packages.txt /out/vendor
+
 # --- root-config ----------------------------------------------------------------------------
 FROM node:18.20.0-alpine AS build-stage
 
@@ -61,7 +70,10 @@ COPY --from=mfe-bundles /mfe /usr/share/nginx/html/mfe
 # so on AOT's CDN its lazy chunks answer 403.
 COPY --from=web-bundle /forms-flow-web/build/forms-flow-web.js /usr/share/nginx/html/mfe/forms-flow-web/
 COPY --from=web-bundle /forms-flow-web/build/static /usr/share/nginx/html/mfe/forms-flow-web/static
-RUN find /usr/share/nginx/html/mfe/forms-flow-web -type f \( -name '*.js' -o -name '*.css' \) -exec gzip -9 -k {} +
+COPY --from=vendor /out/vendor /usr/share/nginx/html/vendor
+RUN find /usr/share/nginx/html/mfe/forms-flow-web /usr/share/nginx/html/vendor -type f \
+      \( -name '*.js' -o -name '*.css' -o -name '*.svg' -o -name '*.ttf' -o -name '*.eot' \) \
+      -exec gzip -9 -k {} +
 
 # Runtime files: nginx's entrypoint runs /docker-entrypoint.d/* before starting nginx.
 COPY forms-flow-web-root-config/public/config/config.template.js /etc/formsflow/config.template.js

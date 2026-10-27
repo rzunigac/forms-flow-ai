@@ -24,6 +24,11 @@ module.exports = (webpackConfigEnv, argv) => {
         templateParameters: {
           isLocal: webpackConfigEnv && webpackConfigEnv.isLocal,
           orgName,
+          // Third-party assets: copied into the image (vendor/packages.txt); jsDelivr in local development.
+          vendor:
+            webpackConfigEnv && webpackConfigEnv.isLocal
+              ? "https://cdn.jsdelivr.net/npm"
+              : "/vendor",
         },
       }),
       new CopyPlugin({
