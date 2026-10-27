@@ -57,8 +57,11 @@ WORKDIR /usr/share/nginx/html/config
 
 COPY --from=build-stage /forms-flow-web-root-config/app/dist /usr/share/nginx/html
 COPY --from=mfe-bundles /mfe /usr/share/nginx/html/mfe
+# The bundle plus the chunks it loads on demand (static/). Upstream uploads forms-flow-web.js only,
+# so on AOT's CDN its lazy chunks answer 403.
 COPY --from=web-bundle /forms-flow-web/build/forms-flow-web.js /usr/share/nginx/html/mfe/forms-flow-web/
-RUN gzip -9 -k /usr/share/nginx/html/mfe/forms-flow-web/forms-flow-web.js
+COPY --from=web-bundle /forms-flow-web/build/static /usr/share/nginx/html/mfe/forms-flow-web/static
+RUN find /usr/share/nginx/html/mfe/forms-flow-web -type f \( -name '*.js' -o -name '*.css' \) -exec gzip -9 -k {} +
 
 # Runtime files: nginx's entrypoint runs /docker-entrypoint.d/* before starting nginx.
 COPY forms-flow-web-root-config/public/config/config.template.js /etc/formsflow/config.template.js
