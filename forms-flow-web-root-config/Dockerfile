@@ -77,7 +77,8 @@ RUN find /usr/share/nginx/html/mfe/forms-flow-web /usr/share/nginx/html/vendor -
 
 # Runtime files: nginx's entrypoint runs /docker-entrypoint.d/* before starting nginx.
 COPY forms-flow-web-root-config/public/config/config.template.js /etc/formsflow/config.template.js
-COPY --chmod=755 forms-flow-web-root-config/docker/40-formsflow-config.sh /docker-entrypoint.d/
+COPY --chmod=755 forms-flow-web-root-config/docker/40-formsflow-config.sh \
+     forms-flow-web-root-config/docker/41-formsflow-csp.sh /docker-entrypoint.d/
 # Kept for deployments that still run it from a postStart hook or an entrypoint override.
 COPY --chmod=755 forms-flow-web-root-config/env.sh /usr/share/nginx/html/config/env.sh
 
