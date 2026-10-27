@@ -90,7 +90,7 @@
                 </div>
             <#else>
         <div style="text-align: center;display: inline-block;">
-            <img src="https://149641023.v2.pressablecdn.com/wp-content/uploads/2021/08/logo.png" alt="Centered Image"/>
+            <img src="${url.resourcesPath}/img/logo.png" alt="Centered Image"/>
         </div>
                 <h1 id="kc-page-title"><#nested "header"></h1>
             </#if>
