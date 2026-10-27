@@ -45,6 +45,9 @@
 
   <!-- ✅ CKEditor (used in formio WYSIWYG) -->
   <script src="<%= formioCdn %>/ckeditor/19.0.0/ckeditor.js"></script>
+  <!-- Quill (Text Area editor "Quill"): loaded before SystemJS. Loaded later by formio, its UMD wrapper finds
+       SystemJS's AMD define() and registers a module instead of window.Quill, so the editor never renders. -->
+  <script src="<%= formioCdn %>/quill/2.0.0-dev.3/quill.min.js"></script>
 
 
   <!--
