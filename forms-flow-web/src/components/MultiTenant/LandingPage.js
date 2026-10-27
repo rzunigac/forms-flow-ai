@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
 import "./landingPage.css";
+import landingBanner from "./landing-banner.png";
+import formsflowLogo from "./formsflow-logo.png";
 import { validateTenant } from "../../apiManager/services/tenantServices";
 import { useTranslation } from "react-i18next";
 
@@ -30,7 +32,7 @@ const LandingPage = () => {
     <div className="landing">
       <div className="imageContainer">
         <img
-          src="https://i0.wp.com/formsflow.ai/wp-content/uploads/2021/08/srvc-bnr.png?fit=702%2C569&ssl=1"
+          src={landingBanner}
           alt="Login Image"
           className="image"
         />
@@ -38,7 +40,7 @@ const LandingPage = () => {
       <div className="formContainer">
         <div className="innerContainer">
           <img
-            src="https://149641023.v2.pressablecdn.com/wp-content/uploads/2022/05/Site_logo.png"
+            src={formsflowLogo}
             alt="formsflow Logo"
             className="logo"
           />
