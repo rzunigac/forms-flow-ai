@@ -7,8 +7,6 @@ import { featureFlags } from "./featureToogle";
 import { FlagsProvider } from "flagged";
 import { Formio, Components } from "@aot-technologies/formio-react";
 import { AppConfig } from "./config";
-import { installBearerTokenInterceptor } from "./services/BearerTokenInterceptor";
-import { kcServiceInstance } from "./components/PrivateRoute";
 import "./resourceBundles/i18n.js";
 
 if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === "object") {
@@ -21,21 +19,6 @@ if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === "object") {
 }
 Formio.setProjectUrl(AppConfig.projectUrl);
 Formio.setBaseUrl(AppConfig.apiUrl);
-
-if (AppConfig.bearerTokenInjectionEnabled && AppConfig.bearerTokenUrls.length > 0) {
-  installBearerTokenInterceptor({
-    urlPatterns: AppConfig.bearerTokenUrls,
-    getToken: () => {
-      try {
-        return kcServiceInstance()?.getToken?.() || "";
-      } catch (_e) {
-        return "";
-      }
-    },
-  });
-} else if (AppConfig.bearerTokenInjectionEnabled && AppConfig.bearerTokenUrls.length === 0) {
-  console.warn("[BearerTokenInterceptor] REACT_APP_BEARER_TOKEN_INJECTION_ENABLED=true but REACT_APP_BEARER_TOKEN_URLS is empty — not installing");
-}
 
 // Set custom formio elements - Code splitted
 import(

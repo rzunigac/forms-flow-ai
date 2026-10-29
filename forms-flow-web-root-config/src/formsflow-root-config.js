@@ -8,7 +8,24 @@ import PubSub from "pubsub-js";
 import microfrontendLayout from "./microfrontend-layout.html";
 import multitenantLayout from "./microfrontend-multitenant-layout.html";
 import { register as registerServiceWorker } from './serviceWorkerSetup';
-import { applyCompactFormStyles } from "@formsflow/service";
+import { applyCompactFormStyles, StorageService } from "@formsflow/service";
+import { installBearerTokenInterceptor, parseUrlList } from "./bearerTokenInterceptor";
+
+// Before any micro-frontend loads, so it covers every route (task, submissions and admin pages included).
+// The token is the one every micro-frontend sends: KeycloakService stores it on login and on each refresh.
+if (String(window._env_?.REACT_APP_BEARER_TOKEN_INJECTION_ENABLED).toLowerCase() === "true") {
+  const urlPatterns = parseUrlList(window._env_?.REACT_APP_BEARER_TOKEN_URLS);
+  if (urlPatterns.length > 0) {
+    installBearerTokenInterceptor({
+      urlPatterns,
+      getToken: () => StorageService.get(StorageService.User.AUTH_TOKEN) || "",
+    });
+  } else {
+    console.warn(
+      "[BearerTokenInterceptor] REACT_APP_BEARER_TOKEN_INJECTION_ENABLED=true but REACT_APP_BEARER_TOKEN_URLS is empty — not installing"
+    );
+  }
+}
 
 // PubSub methods
 const publish = (event, data) => PubSub.publish(event, data);

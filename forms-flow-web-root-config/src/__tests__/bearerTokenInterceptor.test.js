@@ -1,4 +1,4 @@
-import { _matchesAny, _parsePattern, installBearerTokenInterceptor } from "../../../services/BearerTokenInterceptor";
+import { _matchesAny, _parsePattern, installBearerTokenInterceptor, parseUrlList } from "../bearerTokenInterceptor";
 
 describe("GatewayAuthInterceptor — URL matching", () => {
   test("URL starting with the gateway base matches", () => {
@@ -620,3 +620,19 @@ describe("BearerTokenInterceptor — _parsePattern direct tests", () => {
     expect(_parsePattern(42)).toMatchObject({ valid: false });
   });
 });
+
+describe("BearerTokenInterceptor — URL list setting", () => {
+  test("splits a comma-separated string, trimming and dropping empty entries", () => {
+    expect(parseUrlList(" https://a.example.com, ,https://*.b.example.com ,")).toEqual([
+      "https://a.example.com",
+      "https://*.b.example.com",
+    ]);
+  });
+
+  test("accepts an array and treats a missing value as empty", () => {
+    expect(parseUrlList(["https://a.example.com", " "])).toEqual(["https://a.example.com"]);
+    expect(parseUrlList(undefined)).toEqual([]);
+    expect(parseUrlList("")).toEqual([]);
+  });
+});
+

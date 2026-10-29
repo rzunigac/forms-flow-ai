@@ -1,4 +1,16 @@
-/* istanbul ignore file */
+// Adds the user's Keycloak access token (Authorization: Bearer) to fetch and XMLHttpRequest calls whose origin
+// matches a configured pattern, e.g. a file storage gateway: form.io's "url" storage provider sends DELETE
+// without any credentials. Requests that already carry an Authorization header are left alone.
+
+// "https://a.example.com, https://*.b.example.com" -> ["https://a.example.com", "https://*.b.example.com"]
+export function parseUrlList(raw) {
+  if (Array.isArray(raw)) return raw.map((s) => String(s).trim()).filter(Boolean);
+  if (raw === undefined || raw === null) return [];
+  return String(raw)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 function defaultPortFor(scheme) {
   return scheme === "https:" ? "443" : "80";
