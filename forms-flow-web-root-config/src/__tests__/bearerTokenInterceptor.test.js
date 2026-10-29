@@ -636,3 +636,36 @@ describe("BearerTokenInterceptor — URL list setting", () => {
   });
 });
 
+describe("BearerTokenInterceptor — fetch with a URL object", () => {
+  test("adds Authorization when fetch is called with a URL instance", async () => {
+    const target = makeFakeTarget();
+    const originalFetch = target.fetch;
+    installBearerTokenInterceptor({ urlPatterns: ["https://gw.example.com"], getToken: () => "tkn-url", target });
+
+    await target.fetch(new URL("https://gw.example.com/files/1"), { method: "DELETE" });
+
+    const [, init] = originalFetch.mock.calls[0];
+    expect(new Headers(init.headers).get("Authorization")).toBe("Bearer tkn-url");
+  });
+});
+
+describe("BearerTokenInterceptor — patterns with a path", () => {
+  let warnSpy;
+  beforeEach(() => { warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {}); });
+  afterEach(() => { warnSpy.mockRestore(); });
+
+  test("warns that the path is ignored and still matches the whole origin", () => {
+    const target = makeFakeTarget();
+    installBearerTokenInterceptor({ urlPatterns: ["https://gw.example.com/storage"], getToken: () => "t", target });
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("the path is ignored"));
+    expect(_matchesAny("https://gw.example.com/other", ["https://gw.example.com/storage"])).toBe(true);
+  });
+
+  test("a trailing slash alone is not a path", () => {
+    const target = makeFakeTarget();
+    installBearerTokenInterceptor({ urlPatterns: ["https://gw.example.com/"], getToken: () => "t", target });
+
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining("the path is ignored"));
+  });
+});

@@ -34,6 +34,7 @@ export function _parsePattern(raw) {
 
   // Strip path/query/hash — origin-only matching
   const delimIdx = rest.search(/[/?#]/);
+  const hasPath = delimIdx !== -1 && rest.slice(delimIdx) !== "/";
   if (delimIdx !== -1) rest = rest.slice(0, delimIdx);
 
   // Split host:port (handle IPv6 bracketed hosts too)
@@ -71,12 +72,12 @@ export function _parsePattern(raw) {
     const labels = suffix.split(".");
     if (labels.length < 2) return { valid: false, reason: "wildcard suffix must have at least 2 labels" };
     if (labels.some((l) => !l)) return { valid: false, reason: "empty label in wildcard suffix" };
-    return { valid: true, scheme, port, suffix, wildcard: true };
+    return { valid: true, scheme, port, suffix, wildcard: true, hasPath };
   }
 
   if (host.indexOf("*") !== -1) return { valid: false, reason: "wildcard only allowed as leftmost label (e.g. *.example.com)" };
 
-  return { valid: true, scheme, port, host, wildcard: false };
+  return { valid: true, scheme, port, host, wildcard: false, hasPath };
 }
 
 function _parsedOriginOf(requestUrl, locationHref) {
@@ -135,6 +136,9 @@ export function installBearerTokenInterceptor({ urlPatterns, getToken, target })
   for (const raw of rawPatterns) {
     const parsed = _parsePattern(raw);
     if (parsed.valid) {
+      if (parsed.hasPath) {
+        console.warn(`[BearerTokenInterceptor] pattern "${raw}": only the origin is matched; the path is ignored`);
+      }
       parsedPatterns.push(parsed);
       validRaws.push(raw);
     } else {
@@ -160,7 +164,10 @@ function wrapFetch(target, patterns, getToken) {
   const wrapped = new Proxy(originalFetch, {
     apply(fn, _thisArg, [input, init]) {
       const isRequest = typeof Request !== "undefined" && input instanceof Request;
-      const url = typeof input === "string" ? input : (input && input.url) || "";
+      let url = "";
+      if (typeof input === "string") url = input;
+      else if (typeof URL !== "undefined" && input instanceof URL) url = input.href;
+      else if (input && input.url) url = input.url;
       const locationHref = target.location && target.location.href;
 
       if (!_matchesAnyParsed(url, patterns, locationHref)) {
