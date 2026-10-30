@@ -144,6 +144,33 @@ describe("GatewayAuthInterceptor — fetch with Request argument", () => {
 
     expect(req.headers.get("Authorization")).toBe(originalAuth);
   });
+
+  test("keeps the token when init.headers replace the Request's headers", async () => {
+    const target = makeFakeTarget();
+    installBearerTokenInterceptor({ urlPatterns: [BASE], getToken: () => "tkn-abc", target });
+
+    await target.fetch(new Request(`${BASE}/files/123`, { headers: { "X-From": "request" } }), {
+      method: "DELETE",
+      headers: { "X-From": "init" },
+    });
+
+    const [arg, init] = target.fetch.mock.calls[0];
+    expect(init).toBeUndefined();
+    expect(arg.method).toBe("DELETE");
+    expect(arg.headers.get("Authorization")).toBe("Bearer tkn-abc");
+    expect(arg.headers.get("X-From")).toBe("init");
+  });
+
+  test("leaves an Authorization given in init.headers alone", async () => {
+    const target = makeFakeTarget();
+    installBearerTokenInterceptor({ urlPatterns: [BASE], getToken: () => "tkn-abc", target });
+
+    const req = new Request(`${BASE}/files/123`);
+    const init = { headers: { Authorization: "Bearer caller" } };
+    await target.fetch(req, init);
+
+    expect(target.fetch.mock.calls[0]).toEqual([req, init]);
+  });
 });
 
 describe("GatewayAuthInterceptor — XHR wrapping", () => {

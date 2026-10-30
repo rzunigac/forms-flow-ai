@@ -180,13 +180,15 @@ function wrapFetch(target, patterns, getToken) {
       }
 
       if (isRequest) {
-        if (input.headers.has("Authorization")) {
+        // fetch(request, init) is fetch(new Request(request, init)): init.headers, when given, replace the
+        // request's own headers, so the token goes on whichever set fetch would send.
+        const sent = new Headers(init && init.headers !== undefined ? init.headers : input.headers);
+        if (sent.has("Authorization")) {
           return fn.call(target, input, init);
         }
-        const newHeaders = new Headers(input.headers);
-        newHeaders.set("Authorization", `Bearer ${token}`);
-        const newReq = new Request(input, { headers: newHeaders });
-        return fn.call(target, newReq, init);
+        sent.set("Authorization", `Bearer ${token}`);
+        const newReq = new Request(input, { ...(init || {}), headers: sent });
+        return fn.call(target, newReq);
       }
 
       const mergedInit = init ? { ...init } : {};
