@@ -1,4 +1,4 @@
-FROM python:3.13.2-slim-bullseye
+FROM python:3.13.17-slim-trixie
 
 LABEL project="formsflow-data-layer"
 

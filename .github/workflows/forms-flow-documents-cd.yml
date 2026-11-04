@@ -88,7 +88,7 @@ jobs:
         with:
           context: forms-flow-documents
           push: true
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64/v8
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Build and push Docker image
@@ -97,17 +97,8 @@ jobs:
         with:
           context: forms-flow-documents
           push: true
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64/v8
           tags: ${{ steps.meta.outputs.tags }}, formsflow/forms-flow-documents-api:latest
-          labels: ${{ steps.meta.outputs.labels }}
-      - name: Build and push Docker image - arm64
-        uses: docker/build-push-action@v4
-        with:
-          context: forms-flow-documents
-          file: forms-flow-documents/Dockerfile-ARM64
-          push: true
-          platforms: linux/arm64/v8
-          tags: ${{ steps.meta.outputs.tags }}-arm64
           labels: ${{ steps.meta.outputs.labels }}
       - name: Scan Docker image 🐳
         uses: snyk/actions/docker@master
