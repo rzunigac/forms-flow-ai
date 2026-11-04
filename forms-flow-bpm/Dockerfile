@@ -1,6 +1,6 @@
 
 # Maven build (Maven 3.9 on Temurin 17)
-FROM maven:3.9-eclipse-temurin-17 AS MAVEN_TOOL_CHAIN
+FROM maven:3.9-eclipse-temurin-17@sha256:1a352420f7aba21f5ad08df31bab55f74c013fb491f1ae8ab1dd7ff9ed698584 AS MAVEN_TOOL_CHAIN
 COPY settings-docker.xml /usr/share/maven/ref/
 WORKDIR /tmp/
 
@@ -19,7 +19,7 @@ RUN mvn -s /usr/share/maven/ref/settings-docker.xml install -P camunda
 
 
 # Runtime: Temurin 21 JRE
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre@sha256:f37956012e0cb88400e5b3689aeae2d2d735364c1922ae2225536163b5a99f56
 
 # set label for image
 LABEL Name="formsflow"
