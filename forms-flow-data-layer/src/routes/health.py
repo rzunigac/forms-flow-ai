@@ -43,7 +43,7 @@ class HealthCheck:
     async def check_webapi(webapi_db):
         """Check WebAPI DB connection."""
         try:
-            async with await webapi_db.get_session() as session:
+            async with webapi_db.get_session() as session:
                 await session.execute(text("SELECT 1"))
             return "connected"
         except Exception as e:
@@ -54,7 +54,7 @@ class HealthCheck:
     async def check_bpmn(bpmn_db):
         """Check BPMN DB connection."""
         try:
-            async with await bpmn_db.get_session() as session:
+            async with bpmn_db.get_session() as session:
                 await session.execute(text("SELECT 1"))
             return "connected"
         except Exception as e:
